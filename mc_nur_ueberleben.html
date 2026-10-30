@@ -1,0 +1,2162 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Blockheim – nur Überleben</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --slot: 44px;
+  --akzent:#7fd65a;
+  --text:#f3f0e6;
+  --gedimmt:rgba(243,240,230,.65);
+  --panel:#2a2723;
+  --panel2:#3a352f;
+  --rand:#14110e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;background:#0d0f14;color:var(--text);font-family:"Pixelify Sans",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#welt{position:fixed;inset:0;touch-action:none}
+#welt canvas{display:block;width:100%;height:100%;touch-action:none}
+button{font-family:inherit;color:inherit}
+
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none}
+#fadenkreuz{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%);mix-blend-mode:difference}
+#fadenkreuz::before,#fadenkreuz::after{content:"";position:absolute;background:#fff}
+#fadenkreuz::before{left:8px;top:0;width:2px;height:18px}
+#fadenkreuz::after{top:8px;left:0;height:2px;width:18px}
+#unten{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
+#werte{display:flex;justify-content:space-between;width:calc(var(--slot) * 9 + 16px);gap:8px}
+#herzen,#hunger,#luft{display:flex;gap:1px}
+#herzen svg,#hunger svg,#luft svg{width:18px;height:18px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.6))}
+#herzen.wenig svg{animation:zitter .35s infinite}
+@keyframes zitter{50%{transform:translateY(-1px)}}
+#luft{position:absolute;right:0;bottom:calc(100% + 2px)}
+#werteR{position:relative}
+#hotbar{display:flex;gap:2px;padding:3px;background:rgba(20,18,16,.72);border:2px solid var(--rand);border-radius:4px;pointer-events:auto}
+.slot{position:relative;width:var(--slot);height:var(--slot);background:#8b8b8b;border:2px solid;border-color:#373737 #fff #fff #373737;display:grid;place-items:center}
+#hotbar .slot{background:rgba(70,66,60,.55);border:2px solid rgba(0,0,0,.4)}
+#hotbar .slot.aktiv{border:3px solid #fff;outline:2px solid #000}
+.slot img{width:78%;height:78%;image-rendering:pixelated;pointer-events:none}
+.slot b{position:absolute;right:3px;bottom:0;font-size:15px;font-weight:700;text-shadow:2px 2px 0 #3e3e3e;pointer-events:none}
+.slot i{position:absolute;left:10%;bottom:4px;height:3px;pointer-events:none}
+.slot.gross{width:calc(var(--slot) * 1.3);height:calc(var(--slot) * 1.3)}
+#itemName{position:absolute;left:50%;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 92px);transform:translateX(-50%);font-size:17px;text-shadow:2px 2px 0 #222;opacity:0;transition:opacity .3s;white-space:nowrap}
+#itemName.an{opacity:1}
+#meldung{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:20px;text-align:center;text-shadow:2px 2px 0 #222;opacity:0;transition:opacity .4s;max-width:90vw}
+#meldung.an{opacity:1}
+#f3{position:absolute;left:8px;top:8px;white-space:pre;font-size:14px;line-height:1.35;background:rgba(0,0,0,.45);padding:6px 8px;font-family:ui-monospace,Consolas,monospace}
+#rot{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,0,0,0) 40%,rgba(200,0,0,.75));opacity:0;transition:opacity .25s}
+#schwarz{position:fixed;inset:0;pointer-events:none;background:#000;opacity:0;transition:opacity 1s}
+#wasserBild{position:fixed;inset:0;pointer-events:none;background:rgba(20,60,160,.35);opacity:0;transition:opacity .2s}
+
+/* Inventar */
+#inv{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;overflow:auto;padding:12px}
+.invPanel{background:#c6c6c6;color:#3f3f3f;border:3px solid;border-color:#fff #555 #555 #fff;border-radius:6px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 0 3px #000}
+.invTitel{font-size:18px;font-weight:600;margin-bottom:4px}
+.raster{display:grid;grid-template-columns:repeat(9,var(--slot))}
+.craftReihe{display:flex;align-items:center;gap:16px;justify-content:center;padding:6px 0}
+.pfeil{font-size:30px;color:#7a7a7a;position:relative}
+.pfeil i{position:absolute;left:0;top:50%;height:6px;background:#fff;transform:translateY(-50%);width:0;border-radius:3px}
+.ofenSpalte{display:flex;flex-direction:column;align-items:center;gap:4px}
+.flamme{width:20px;height:22px;background:linear-gradient(to top,#ff8a1e var(--h,0%),#5a5a5a var(--h,0%));clip-path:polygon(50% 0,85% 45%,75% 100%,25% 100%,15% 45%)}
+.invHinweis{font-size:13px;color:#555;text-align:center}
+#invZu{align-self:flex-end;background:#8b8b8b;border:2px solid;border-color:#fff #373737 #373737 #fff;padding:4px 12px;font-size:15px;cursor:pointer;color:#222}
+#cursorItem{position:fixed;width:var(--slot);height:var(--slot);transform:translate(-50%,-50%);pointer-events:none;display:grid;place-items:center;z-index:30}
+#cursorItem img{width:78%;height:78%;image-rendering:pixelated}
+#cursorItem b{position:absolute;right:3px;bottom:0;font-size:15px;font-weight:700;color:#fff;text-shadow:2px 2px 0 #3e3e3e}
+
+/* Menüs */
+.menue{position:fixed;inset:0;display:grid;place-items:center;padding:20px 16px;overflow:auto;background:rgba(10,12,16,.45)}
+.karte{width:min(500px,100%);background:rgba(25,22,19,.88);border:3px solid #000;box-shadow:inset 0 0 0 2px #5a4d3e;border-radius:8px;padding:24px 22px;text-align:center}
+.logo{font-size:clamp(46px,11vw,76px);font-weight:700;letter-spacing:.04em;line-height:1;color:#9be36c;text-shadow:4px 4px 0 #2d5a1c,8px 8px 0 rgba(0,0,0,.4)}
+.unter{font-size:18px;letter-spacing:.3em;color:#e8d9a8;margin:8px 0 18px}
+.knopf{display:block;width:100%;background:#6f6f6f;border:3px solid;border-color:#a8a8a8 #3b3b3b #3b3b3b #a8a8a8;color:#fff;font-size:20px;padding:12px;margin-top:10px;cursor:pointer;text-shadow:2px 2px 0 #333}
+.knopf:hover{background:#7d8fd6}
+.knopf.haupt{background:#4f8a34}
+.knopf.haupt:hover{background:#5fa140}
+.knopf small{display:block;font-size:13px;opacity:.75}
+.zeile{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:16px;color:var(--gedimmt)}
+.zeile input[type=number]{flex:1;background:#111;border:2px solid #555;color:#fff;font:inherit;padding:6px 8px}
+.zeile input[type=range]{flex:1;accent-color:#7fd65a}
+.hilfe{margin-top:16px;font-size:14px;color:var(--gedimmt);line-height:1.6;text-align:left}
+.hilfe b{color:var(--text);font-weight:600}
+.leise{background:none;border:none;color:var(--gedimmt);font-size:14px;margin-top:12px;cursor:pointer;letter-spacing:.1em}
+#tod{background:rgba(120,0,0,.45)}
+#tod .titel{font-size:44px;color:#fff;text-shadow:3px 3px 0 #400}
+#laden{position:fixed;inset:0;display:grid;place-items:center;background:#0d0f14;font-size:22px;color:#9be36c}
+#laden div{width:min(360px,80vw)}
+#ladeRahmen{height:14px;border:3px solid #000;background:#333;margin-top:12px}
+#ladeBalken{height:100%;width:0;background:#7fd65a}
+
+/* Touch */
+#touch{position:fixed;inset:0;pointer-events:none}
+#tJoy{position:absolute;left:max(24px,env(safe-area-inset-left));bottom:calc(max(24px,env(safe-area-inset-bottom)) + 30px);width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.35);pointer-events:auto;touch-action:none}
+#tKnopf{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px;border-radius:50%;background:rgba(255,255,255,.45);border:3px solid rgba(255,255,255,.7)}
+.tk{position:absolute;pointer-events:auto;touch-action:none;background:rgba(30,30,30,.45);border:3px solid rgba(255,255,255,.45);border-radius:12px;display:grid;place-items:center;font-size:15px;color:#fff;text-shadow:1px 1px 0 #000}
+.tk.an,.tk.fest{background:rgba(127,214,90,.45);border-color:#9be36c}
+#tSpringen{right:max(24px,env(safe-area-inset-right));bottom:calc(max(24px,env(safe-area-inset-bottom)) + 40px);width:84px;height:84px;border-radius:50%}
+#tDucken{right:calc(max(24px,env(safe-area-inset-right)) + 100px);bottom:calc(max(24px,env(safe-area-inset-bottom)) + 30px);width:64px;height:64px;border-radius:50%;font-size:12px}
+#tInv{right:max(24px,env(safe-area-inset-right));bottom:calc(max(24px,env(safe-area-inset-bottom)) + 140px);width:64px;height:48px}
+#tPause{right:max(16px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top));width:48px;height:42px}
+#touchHinweis{position:absolute;right:max(20px,env(safe-area-inset-right));top:calc(max(14px,env(safe-area-inset-top)) + 54px);font-size:13px;color:rgba(255,255,255,.7);text-align:right;line-height:1.4;text-shadow:1px 1px 0 #000}
+@media (max-width:640px){ :root{--slot:36px} #herzen svg,#hunger svg,#luft svg{width:14px;height:14px} }
+</style>
+</head>
+<body>
+<div id="welt"></div>
+<div id="wasserBild"></div>
+<div id="rot"></div>
+
+<div id="hud" hidden>
+  <div id="fadenkreuz"></div>
+  <div id="itemName"></div>
+  <div id="meldung"></div>
+  <div id="unten">
+    <div id="werte"><div id="herzen"></div><div id="werteR"><div id="luft"></div><div id="hunger"></div></div></div>
+    <div id="hotbar"></div>
+  </div>
+  <div id="f3" hidden></div>
+</div>
+
+<div id="touch" hidden>
+  <div id="tJoy"><div id="tKnopf"></div></div>
+  <div class="tk" id="tSpringen">▲</div>
+  <div class="tk" id="tDucken">DUCKEN</div>
+  <div class="tk" id="tInv">• • •</div>
+  <div class="tk" id="tPause">II</div>
+  <div id="touchHinweis">Tippen: bauen / benutzen<br>Halten: abbauen</div>
+</div>
+
+<div id="inv" hidden>
+  <div class="invPanel">
+    <div id="invOben"></div>
+    <div class="raster" id="invHaupt"></div>
+    <div class="raster" id="invLeiste"></div>
+    <button id="invZu">Schließen (E)</button>
+  </div>
+</div>
+<div id="cursorItem" hidden></div>
+
+<div id="startMenue" class="menue" hidden>
+  <div class="karte">
+    <div class="logo">BLOCKHEIM</div>
+    <div class="unter">NUR ÜBERLEBEN</div>
+    <button class="knopf haupt" id="weiterKnopf" hidden>WEITERSPIELEN<small id="weiterInfo"></small></button>
+    <button class="knopf" id="neuKnopf">NEUE WELT</button>
+    <div class="zeile">Seed <input type="number" id="seed"></div>
+    <div class="zeile">Sichtweite <input type="range" id="sicht" min="3" max="9" step="1"> <span id="sichtWert"></span></div>
+    <div class="hilfe" id="steuerPC">
+      <b>Maus</b> umsehen · <b>Linke Taste halten</b> abbauen / angreifen · <b>Rechte Taste</b> bauen, benutzen, essen<br>
+      <b>WASD</b> laufen · <b>Leertaste</b> springen / schwimmen · <b>Strg</b> oder <b>W doppelt</b> sprinten · <b>Shift</b> ducken<br>
+      <b>E</b> Inventar & Crafting · <b>Q</b> fallen lassen · <b>1–9 / Mausrad</b> Gegenstand · <b>F3</b> Infos · <b>Esc</b> Pause
+    </div>
+    <div class="hilfe" id="steuerTouch" hidden>
+      <b>Links</b> Steuerknüppel · <b>Rechts wischen</b> umsehen · <b>Tippen</b> bauen / benutzen / angreifen · <b>Halten</b> abbauen<br>
+      <b>▲</b> springen / schwimmen · <b>DUCKEN</b> · <b>• • •</b> Inventar & Crafting · Knüppel ganz nach vorn = sprinten
+    </div>
+    <button class="leise" id="tonKnopf">TON: AN</button>
+  </div>
+</div>
+
+<div id="pauseMenue" class="menue" hidden>
+  <div class="karte">
+    <div class="logo" style="font-size:48px">PAUSE</div>
+    <button class="knopf haupt" id="pWeiter">ZURÜCK INS SPIEL</button>
+    <div class="zeile">Sichtweite <input type="range" id="pSicht" min="3" max="9" step="1"> <span id="pSichtWert"></span></div>
+    <button class="knopf" id="pSpeichern">SPEICHERN & ZUM MENÜ</button>
+    <div class="hilfe">Die Welt wird automatisch alle 20 Sekunden im Browser gespeichert.</div>
+  </div>
+</div>
+
+<div id="tod" class="menue" hidden>
+  <div class="karte" style="background:rgba(40,0,0,.8)">
+    <div class="titel">Du bist gestorben!</div>
+    <div class="hilfe" id="todGrund" style="text-align:center;font-size:17px"></div>
+    <button class="knopf haupt" id="wiederKnopf">WIEDERBELEBEN</button>
+  </div>
+</div>
+<div id="schwarz"></div>
+
+<div id="laden"><div>Welt wird erzeugt …<div id="ladeRahmen"><div id="ladeBalken"></div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>
+'use strict';
+(function(){
+// =====================================================================
+//  BLOCKHEIM – Engine: Zufall, Rauschen, Blöcke, Welt, Licht, Meshing
+// =====================================================================
+const CW = 16, CH = 128, CN = CW * CW * CH, MEER = 46;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const idx = (x, y, z) => (y * CW + z) * CW + x;
+
+// ---------- deterministischer Zufall ----------
+function hash3(a, b, c) {
+  let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177 | 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+
+// ---------- Simplex-Rauschen (2D/3D) ----------
+function Rauschen(seed) {
+  const r = rng(seed), p = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) p[i] = i;
+  for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = p[i]; p[i] = p[j]; p[j] = t; }
+  const perm = new Uint8Array(512), pm12 = new Uint8Array(512);
+  for (let i = 0; i < 512; i++) { perm[i] = p[i & 255]; pm12[i] = perm[i] % 12; }
+  const g3 = [1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1, 0, 1, 0, 1, -1, 0, 1, 1, 0, -1, -1, 0, -1, 0, 1, 1, 0, -1, 1, 0, 1, -1, 0, -1, -1];
+  const F2 = .5 * (Math.sqrt(3) - 1), G2 = (3 - Math.sqrt(3)) / 6, F3 = 1 / 3, G3 = 1 / 6;
+  function n2(xin, yin) {
+    let n0 = 0, n1 = 0, n2_ = 0;
+    const s = (xin + yin) * F2, i = Math.floor(xin + s), j = Math.floor(yin + s), t = (i + j) * G2;
+    const x0 = xin - (i - t), y0 = yin - (j - t);
+    const i1 = x0 > y0 ? 1 : 0, j1 = x0 > y0 ? 0 : 1;
+    const x1 = x0 - i1 + G2, y1 = y0 - j1 + G2, x2 = x0 - 1 + 2 * G2, y2 = y0 - 1 + 2 * G2;
+    const ii = i & 255, jj = j & 255;
+    let t0 = .5 - x0 * x0 - y0 * y0; if (t0 >= 0) { const g = pm12[ii + perm[jj]] * 3; t0 *= t0; n0 = t0 * t0 * (g3[g] * x0 + g3[g + 1] * y0); }
+    let t1 = .5 - x1 * x1 - y1 * y1; if (t1 >= 0) { const g = pm12[ii + i1 + perm[jj + j1]] * 3; t1 *= t1; n1 = t1 * t1 * (g3[g] * x1 + g3[g + 1] * y1); }
+    let t2 = .5 - x2 * x2 - y2 * y2; if (t2 >= 0) { const g = pm12[ii + 1 + perm[jj + 1]] * 3; t2 *= t2; n2_ = t2 * t2 * (g3[g] * x2 + g3[g + 1] * y2); }
+    return 70 * (n0 + n1 + n2_);
+  }
+  function n3(xin, yin, zin) {
+    let n0, n1, n2_, n3_;
+    const s = (xin + yin + zin) * F3, i = Math.floor(xin + s), j = Math.floor(yin + s), k = Math.floor(zin + s);
+    const t = (i + j + k) * G3, x0 = xin - (i - t), y0 = yin - (j - t), z0 = zin - (k - t);
+    let i1, j1, k1, i2, j2, k2;
+    if (x0 >= y0) { if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; } else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; } }
+    else { if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; } else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; } else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } }
+    const x1 = x0 - i1 + G3, y1 = y0 - j1 + G3, z1 = z0 - k1 + G3, x2 = x0 - i2 + 2 * G3, y2 = y0 - j2 + 2 * G3, z2 = z0 - k2 + 2 * G3, x3 = x0 - 1 + 3 * G3, y3 = y0 - 1 + 3 * G3, z3 = z0 - 1 + 3 * G3;
+    const ii = i & 255, jj = j & 255, kk = k & 255;
+    let t0 = .6 - x0 * x0 - y0 * y0 - z0 * z0; if (t0 < 0) n0 = 0; else { const g = pm12[ii + perm[jj + perm[kk]]] * 3; t0 *= t0; n0 = t0 * t0 * (g3[g] * x0 + g3[g + 1] * y0 + g3[g + 2] * z0); }
+    let t1 = .6 - x1 * x1 - y1 * y1 - z1 * z1; if (t1 < 0) n1 = 0; else { const g = pm12[ii + i1 + perm[jj + j1 + perm[kk + k1]]] * 3; t1 *= t1; n1 = t1 * t1 * (g3[g] * x1 + g3[g + 1] * y1 + g3[g + 2] * z1); }
+    let t2 = .6 - x2 * x2 - y2 * y2 - z2 * z2; if (t2 < 0) n2_ = 0; else { const g = pm12[ii + i2 + perm[jj + j2 + perm[kk + k2]]] * 3; t2 *= t2; n2_ = t2 * t2 * (g3[g] * x2 + g3[g + 1] * y2 + g3[g + 2] * z2); }
+    let t3 = .6 - x3 * x3 - y3 * y3 - z3 * z3; if (t3 < 0) n3_ = 0; else { const g = pm12[ii + 1 + perm[jj + 1 + perm[kk + 1]]] * 3; t3 *= t3; n3_ = t3 * t3 * (g3[g] * x3 + g3[g + 1] * y3 + g3[g + 2] * z3); }
+    return 32 * (n0 + n1 + n2_ + n3_);
+  }
+  function fbm2(x, y, o) { let s = 0, a = 1, f = 1, n = 0; for (let i = 0; i < o; i++) { s += a * n2(x * f, y * f); n += a; a *= .5; f *= 2; } return s / n; }
+  return { n2, n3, fbm2 };
+}
+
+// ---------- Texturkacheln (Index im Atlas) ----------
+const T = {
+  grasOben: 0, grasSeite: 1, erde: 2, stein: 3, bruch: 4, sand: 5, stammSeite: 6, stammOben: 7, laub: 8, bretter: 9, wasser: 10, grund: 11,
+  kohle: 12, eisen: 13, gold: 14, saphir: 15, werkOben: 16, werkSeite: 17, ofenVorne: 18, ofenSeite: 19, ofenOben: 20, fackel: 21, glas: 22,
+  schnee: 23, schneeSeite: 24, blumeRot: 25, blumeGelb: 26, grasHoch: 27, truheVorne: 28, truheSeite: 29, truheOben: 30, ziegel: 31,
+  setzling: 32, sandsteinSeite: 33, sandsteinOben: 34, wolle: 35, kies: 36, ofenAn: 37, bettOben: 38, bettSeite: 39, kaktusSeite: 40, kaktusOben: 41,
+  // Gegenstände
+  stock: 48, kohleItem: 49, eisenbarren: 50, goldbarren: 51, saphirItem: 52, apfel: 53, fleisch: 54, bratfleisch: 55, faden: 56, leder: 57, goldapfel: 58,
+  werkzeug: 64, riss: 96
+};
+
+// ---------- Blöcke ----------
+const BLOCK = [], B = {};
+function block(id, name, o) {
+  BLOCK[id] = Object.assign({ id, name, solid: true, opak: true, form: 'wuerfel', tex: [0, 0, 0], vorne: -1, haerte: 1, werkzeug: null, stufe: 0, drop: id, licht: 0, daempf: 1 }, o);
+  B[name] = id;
+}
+block(0, 'Luft', { solid: false, opak: false, form: 'nichts', haerte: -1, drop: 0 });
+block(1, 'Grasblock', { tex: [T.grasOben, T.erde, T.grasSeite], haerte: .6, werkzeug: 'schaufel', drop: 2 });
+block(2, 'Erde', { tex: [T.erde, T.erde, T.erde], haerte: .5, werkzeug: 'schaufel' });
+block(3, 'Stein', { tex: [T.stein, T.stein, T.stein], haerte: 1.5, werkzeug: 'hacke', stufe: 1, drop: 4 });
+block(4, 'Bruchstein', { tex: [T.bruch, T.bruch, T.bruch], haerte: 2, werkzeug: 'hacke', stufe: 1 });
+block(5, 'Sand', { tex: [T.sand, T.sand, T.sand], haerte: .5, werkzeug: 'schaufel' });
+block(6, 'Kies', { tex: [T.kies, T.kies, T.kies], haerte: .6, werkzeug: 'schaufel' });
+block(7, 'Holzstamm', { tex: [T.stammOben, T.stammOben, T.stammSeite], haerte: 2, werkzeug: 'axt' });
+block(8, 'Laub', { tex: [T.laub, T.laub, T.laub], opak: false, haerte: .2, werkzeug: 'axt', drop: -1, daempf: 1 });
+block(9, 'Bretter', { tex: [T.bretter, T.bretter, T.bretter], haerte: 2, werkzeug: 'axt' });
+block(10, 'Wasser', { solid: false, opak: false, form: 'fluessig', tex: [T.wasser, T.wasser, T.wasser], haerte: -1, drop: 0, daempf: 2 });
+block(11, 'Grundgestein', { tex: [T.grund, T.grund, T.grund], haerte: -1, drop: 0 });
+block(12, 'Kohleerz', { tex: [T.kohle, T.kohle, T.kohle], haerte: 3, werkzeug: 'hacke', stufe: 1, drop: 101 });
+block(13, 'Eisenerz', { tex: [T.eisen, T.eisen, T.eisen], haerte: 3, werkzeug: 'hacke', stufe: 2 });
+block(14, 'Golderz', { tex: [T.gold, T.gold, T.gold], haerte: 3, werkzeug: 'hacke', stufe: 3 });
+block(15, 'Saphirerz', { tex: [T.saphir, T.saphir, T.saphir], haerte: 3, werkzeug: 'hacke', stufe: 3, drop: 104 });
+block(16, 'Werkbank', { tex: [T.werkOben, T.bretter, T.werkSeite], haerte: 2.5, werkzeug: 'axt' });
+block(17, 'Ofen', { tex: [T.ofenOben, T.ofenOben, T.ofenSeite], vorne: T.ofenVorne, haerte: 3.5, werkzeug: 'hacke', stufe: 1 });
+block(18, 'Fackel', { solid: false, opak: false, form: 'fackel', tex: [T.fackel, T.fackel, T.fackel], haerte: 0, licht: 14 });
+block(19, 'Glas', { tex: [T.glas, T.glas, T.glas], opak: false, haerte: .3, drop: 0 });
+block(20, 'Schnee', { tex: [T.schnee, T.schnee, T.schnee], haerte: .3, werkzeug: 'schaufel' });
+block(21, 'Rote Blume', { solid: false, opak: false, form: 'kreuz', tex: [T.blumeRot, T.blumeRot, T.blumeRot], haerte: 0 });
+block(22, 'Gelbe Blume', { solid: false, opak: false, form: 'kreuz', tex: [T.blumeGelb, T.blumeGelb, T.blumeGelb], haerte: 0 });
+block(23, 'Hohes Gras', { solid: false, opak: false, form: 'kreuz', tex: [T.grasHoch, T.grasHoch, T.grasHoch], haerte: 0, drop: 0 });
+block(24, 'Truhe', { tex: [T.truheOben, T.truheOben, T.truheSeite], vorne: T.truheVorne, haerte: 2.5, werkzeug: 'axt' });
+block(25, 'Steinziegel', { tex: [T.ziegel, T.ziegel, T.ziegel], haerte: 1.5, werkzeug: 'hacke', stufe: 1 });
+block(26, 'Setzling', { solid: false, opak: false, form: 'kreuz', tex: [T.setzling, T.setzling, T.setzling], haerte: 0 });
+block(27, 'Sandstein', { tex: [T.sandsteinOben, T.sandsteinOben, T.sandsteinSeite], haerte: .8, werkzeug: 'hacke', stufe: 1 });
+block(28, 'Wolle', { tex: [T.wolle, T.wolle, T.wolle], haerte: .8 });
+block(29, 'Bett', { tex: [T.bettOben, T.bretter, T.bettSeite], haerte: .4 });
+block(30, 'Ofen (an)', { tex: [T.ofenOben, T.ofenOben, T.ofenSeite], vorne: T.ofenAn, haerte: 3.5, werkzeug: 'hacke', stufe: 1, drop: 17, licht: 13 });
+block(31, 'Kaktus', { tex: [T.kaktusOben, T.kaktusOben, T.kaktusSeite], haerte: .4 });
+const ANZ_BLOECKE = 32;
+const OPAK = new Uint8Array(256), SOLID = new Uint8Array(256), LICHT = new Uint8Array(256), DAEMPF = new Uint8Array(256);
+for (const b of BLOCK) if (b) { OPAK[b.id] = b.opak ? 1 : 0; SOLID[b.id] = b.solid ? 1 : 0; LICHT[b.id] = b.licht; DAEMPF[b.id] = b.daempf; }
+
+// ---------- Gegenstände ----------
+const ITEM = [];
+function item(id, name, o) { ITEM[id] = Object.assign({ id, name, tile: 0, stapel: 64 }, o); B[name] = id; }
+for (const b of BLOCK) if (b && b.id) ITEM[b.id] = { id: b.id, name: b.name, block: true, stapel: 64 };
+item(100, 'Stock', { tile: T.stock });
+item(101, 'Kohle', { tile: T.kohleItem });
+item(102, 'Eisenbarren', { tile: T.eisenbarren });
+item(103, 'Goldbarren', { tile: T.goldbarren });
+item(104, 'Saphir', { tile: T.saphirItem });
+item(105, 'Apfel', { tile: T.apfel, nahrung: 4, saett: 2.4 });
+item(106, 'Rohes Fleisch', { tile: T.fleisch, nahrung: 3, saett: 1.8 });
+item(107, 'Bratfleisch', { tile: T.bratfleisch, nahrung: 8, saett: 12.8 });
+item(108, 'Faden', { tile: T.faden });
+item(109, 'Leder', { tile: T.leder });
+item(127, 'Goldener Apfel', { tile: T.goldapfel, nahrung: 4, saett: 9.6, heilt: 8 });
+const STUFEN = [{ name: 'Holz', mat: 9, speed: 2, haltbar: 60, schaden: 0 }, { name: 'Stein', mat: 4, speed: 4, haltbar: 132, schaden: 1 }, { name: 'Eisen', mat: 102, speed: 6, haltbar: 250, schaden: 2 }, { name: 'Saphir', mat: 104, speed: 8, haltbar: 1561, schaden: 3 }];
+const TYPEN = [{ name: 'spitzhacke', wort: 'Spitzhacke', art: 'hacke', schaden: 3 }, { name: 'axt', wort: 'Axt', art: 'axt', schaden: 5 }, { name: 'schaufel', wort: 'Schaufel', art: 'schaufel', schaden: 2.5 }, { name: 'schwert', wort: 'Schwert', art: 'schwert', schaden: 5 }];
+STUFEN.forEach((s, t) => TYPEN.forEach((k, j) => {
+  const id = 110 + t * 4 + j, name = (t === 0 ? 'Holz' : s.name) + (k.wort === 'Axt' ? 'axt' : k.wort === 'Schaufel' ? 'schaufel' : k.wort.toLowerCase());
+  item(id, name.charAt(0).toUpperCase() + name.slice(1), { tile: T.werkzeug + t * 4 + j, stapel: 1, werkzeug: { art: k.art, stufe: t + 1, speed: s.speed, haltbar: s.haltbar, schaden: k.schaden + s.schaden } });
+}));
+
+// ---------- Rezepte ----------
+const REZEPTE = [];
+function rezept(muster, schluessel, ergebnis, anzahl = 1) { REZEPTE.push({ muster, schluessel, ergebnis, anzahl }); }
+rezept(['#'], { '#': 7 }, 9, 4);
+rezept(['#', '#'], { '#': 9 }, 100, 4);
+rezept(['##', '##'], { '#': 9 }, 16);
+rezept(['k', 's'], { k: 101, s: 100 }, 18, 4);
+rezept(['###', '# #', '###'], { '#': 4 }, 17);
+rezept(['###', '# #', '###'], { '#': 9 }, 24);
+rezept(['##', '##'], { '#': 3 }, 25, 4);
+rezept(['##', '##'], { '#': 5 }, 27);
+rezept(['##', '##'], { '#': 108 }, 28);
+rezept(['WWW', 'PPP'], { W: 28, P: 9 }, 29);
+rezept(['GGG', 'GAG', 'GGG'], { G: 103, A: 105 }, 127);
+STUFEN.forEach((s, t) => {
+  const m = s.mat, b = 110 + t * 4;
+  rezept(['MMM', ' s ', ' s '], { M: m, s: 100 }, b);
+  rezept(['MM', 'Ms', ' s'], { M: m, s: 100 }, b + 1);
+  rezept(['M', 's', 's'], { M: m, s: 100 }, b + 2);
+  rezept(['M', 'M', 's'], { M: m, s: 100 }, b + 3);
+});
+const SCHMELZEN = { 13: 102, 14: 103, 5: 19, 4: 3, 106: 107, 7: 101, 31: 101 };
+const BRENNWERT = { 101: 80, 7: 15, 9: 15, 100: 5, 16: 15, 24: 15, 110: 10, 111: 10, 112: 10, 113: 10, 26: 5 };
+function rezeptFinden(gitter, n) {
+  // gitter: Array n*n von Item-IDs (0 = leer)
+  let x0 = n, x1 = -1, y0 = n, y1 = -1;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (gitter[y * n + x]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  if (x1 < 0) return null;
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  for (const r of REZEPTE) {
+    if (r.muster.length !== h) continue;
+    const rw = Math.max(...r.muster.map(z => z.length));
+    if (rw !== w) continue;
+    for (const spiegel of [false, true]) {
+      let ok = true;
+      for (let y = 0; y < h && ok; y++) for (let x = 0; x < w && ok; x++) {
+        const zeile = r.muster[y].padEnd(w, ' '), c = zeile[spiegel ? w - 1 - x : x];
+        const soll = c === ' ' ? 0 : r.schluessel[c];
+        if ((gitter[(y + y0) * n + x + x0] || 0) !== soll) ok = false;
+      }
+      if (ok) return r;
+    }
+  }
+  return null;
+}
+
+// =====================================================================
+//  Welt
+// =====================================================================
+class Chunk {
+  constructor(cx, cz) {
+    this.cx = cx; this.cz = cz;
+    this.b = new Uint8Array(CN); this.s = new Uint8Array(CN); this.l = new Uint8Array(CN);
+    this.hoehe = new Uint8Array(CW * CW);
+    this.dirty = true; this.mesh = null; this.status = 0;
+  }
+}
+class Welt {
+  constructor(seed) {
+    this.seed = seed;
+    this.rs = [Rauschen(seed), Rauschen(seed + 101), Rauschen(seed + 202), Rauschen(seed + 303), Rauschen(seed + 404), Rauschen(seed + 505)];
+    this.chunks = new Map();
+    this.aend = new Map();      // chunkKey -> Map(idx -> id)
+    this.meta = new Map();      // "x,y,z" -> Ausrichtung (0..3)
+    this.cache = null;
+    this.beiAenderung = null;   // Rückruf (für Truhen/Öfen)
+  }
+  key(cx, cz) { return cx + ',' + cz; }
+  chunk(cx, cz) {
+    const c = this.cache;
+    if (c && c.cx === cx && c.cz === cz) return c;
+    const k = this.chunks.get(cx + ',' + cz);
+    if (k) this.cache = k;
+    return k;
+  }
+  get(x, y, z) {
+    if (y < 0) return 11; if (y >= CH) return 0;
+    const c = this.chunk(x >> 4, z >> 4); if (!c) return 0;
+    return c.b[idx(x & 15, y, z & 15)];
+  }
+  // Undurchsichtig für Licht/Physik; unbekannte Chunks gelten als fest
+  getFest(x, y, z) {
+    if (y < 0) return 11; if (y >= CH) return 0;
+    const c = this.chunk(x >> 4, z >> 4); if (!c) return 1;
+    return c.b[idx(x & 15, y, z & 15)];
+  }
+  // ---------- Gelände ----------
+  saeule(x, z) {
+    const [r0, r1, r2, r3, r4] = this.rs;
+    const kont = r0.fbm2(x / 520, z / 520, 4);
+    const huegel = r1.fbm2(x / 110, z / 110, 4);
+    const berg = 1 - Math.abs(r2.fbm2(x / 260, z / 260, 4));
+    const bergMaske = smooth(.05, .45, r3.fbm2(x / 700 + 30, z / 700 - 20, 3));
+    let h = 52 + kont * 22 + huegel * 9 + Math.pow(Math.max(0, berg - .35), 1.6) * 95 * bergMaske;
+    h = clamp(Math.floor(h), 3, CH - 12);
+    const temp = r4.fbm2(x / 800 + 100, z / 800, 3), feucht = r4.fbm2(x / 500 - 300, z / 500 + 77, 3);
+    let biom = 'wiese';
+    if (h > 92) biom = 'schnee';
+    else if (temp > .32 && h < 78) biom = 'wueste';
+    else if (feucht > -.05) biom = 'wald';
+    return { h, biom, feucht };
+  }
+  generieren(cx, cz) {
+    const c = new Chunk(cx, cz), b = c.b, x0 = cx * CW, z0 = cz * CW;
+    const [, , , , , r5] = this.rs;
+    const info = [];
+    for (let z = 0; z < CW; z++) for (let x = 0; x < CW; x++) {
+      const s = this.saeule(x0 + x, z0 + z); info.push(s);
+      const h = s.h; c.hoehe[z * CW + x] = h;
+      const grund = 1 + Math.floor(hash3(x0 + x, 7, z0 + z) * 3);
+      for (let y = 0; y <= Math.max(h, MEER); y++) {
+        let id = 0;
+        if (y < grund) id = 11;
+        else if (y < h - 3) id = 3;
+        else if (y < h) id = s.biom === 'wueste' ? (y < h - 1 ? 27 : 5) : (s.biom === 'schnee' ? 3 : 2);
+        else if (y === h) {
+          if (h <= MEER + 1 && s.biom !== 'schnee') id = h < MEER - 2 ? (hash3(x0 + x, 3, z0 + z) < .5 ? 6 : 5) : 5;
+          else id = s.biom === 'wueste' ? 5 : s.biom === 'schnee' ? 20 : 1;
+        } else if (y <= MEER) id = 10;
+        b[idx(x, y, z)] = id;
+      }
+    }
+    // Höhlen (Rauschen grob abgetastet, interpoliert)
+    const G = 4, gx = CW / G + 1, gy = 80 / G + 1, feld = new Float32Array(gx * gy * gx * 2);
+    for (let k = 0; k < gx; k++) for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) {
+      const wx = x0 + i * G, wy = j * G, wz = z0 + k * G, o = ((k * gy + j) * gx + i) * 2;
+      feld[o] = r5.n3(wx / 38, wy / 26, wz / 38);
+      feld[o + 1] = this.rs[3].n3(wx / 38 + 40, wy / 26, wz / 38 - 17);
+    }
+    for (let z = 0; z < CW; z++) for (let x = 0; x < CW; x++) {
+      const h = c.hoehe[z * CW + x], ymax = Math.min(h - (h <= MEER + 3 ? 6 : 1), 79);
+      for (let y = 3; y <= ymax; y++) {
+        const fx = x / G, fy = y / G, fz = z / G, i = Math.floor(fx), j = Math.floor(fy), k = Math.floor(fz), u = fx - i, v = fy - j, w = fz - k;
+        let a = 0, bb = 0;
+        for (let q = 0; q < 8; q++) {
+          const di = q & 1, dj = (q >> 1) & 1, dk = q >> 2, wt = (di ? u : 1 - u) * (dj ? v : 1 - v) * (dk ? w : 1 - w);
+          const o = (((k + dk) * gy + j + dj) * gx + i + di) * 2;
+          a += feld[o] * wt; bb += feld[o + 1] * wt;
+        }
+        const tunnel = Math.abs(a) < .075 && Math.abs(bb) < .09;
+        const halle = y < 34 && a > .55;
+        if (tunnel || halle) { const p = idx(x, y, z); if (b[p] !== 11 && b[p] !== 10) b[p] = y < 9 ? 0 : 0; }
+      }
+    }
+    // Erze
+    const r = rng((cx * 73856093) ^ (cz * 19349663) ^ this.seed);
+    const ader = (id, anzahl, ymin, ymax, groesse) => {
+      for (let n = 0; n < anzahl; n++) {
+        let x = Math.floor(r() * CW), y = ymin + Math.floor(r() * (ymax - ymin)), z = Math.floor(r() * CW);
+        const g = groesse[0] + Math.floor(r() * (groesse[1] - groesse[0]));
+        for (let k = 0; k < g; k++) {
+          if (x >= 0 && x < CW && z >= 0 && z < CW && y > 0 && y < CH && b[idx(x, y, z)] === 3) b[idx(x, y, z)] = id;
+          const d = Math.floor(r() * 6); if (d === 0) x++; else if (d === 1) x--; else if (d === 2) y++; else if (d === 3) y--; else if (d === 4) z++; else z--;
+        }
+      }
+    };
+    ader(12, 18, 5, 110, [5, 12]); ader(13, 9, 5, 64, [4, 9]); ader(14, 2, 5, 32, [4, 8]); ader(15, 1, 4, 16, [3, 7]); ader(6, 5, 5, 60, [8, 20]);
+    // Bäume, Pflanzen (auch Bäume aus Nachbarspalten ragen herein)
+    for (let z = -3; z < CW + 3; z++) for (let x = -3; x < CW + 3; x++) {
+      const wx = x0 + x, wz = z0 + z, hz = hash3(wx, 1, wz);
+      const innen = x >= 0 && x < CW && z >= 0 && z < CW;
+      const s = innen ? info[z * CW + x] : this.saeule(wx, wz);
+      if (s.h <= MEER) continue;
+      const dichte = s.biom === 'wald' ? .022 + Math.max(0, s.feucht) * .03 : s.biom === 'wiese' ? .0025 : 0;
+      if (s.biom === 'wueste' && innen && hz < .006 && b[idx(x, s.h, z)] === 5) {
+        const kh = 1 + Math.floor(hash3(wx, 9, wz) * 3);
+        for (let k = 1; k <= kh; k++) b[idx(x, s.h + k, z)] = 31;
+        continue;
+      }
+      if (hz < dichte) {
+        const th = 4 + Math.floor(hash3(wx, 2, wz) * 3), y0 = s.h + 1;
+        if (innen && b[idx(x, s.h, z)] !== 1) continue;
+        for (let dy = th - 2; dy <= th + 1; dy++) {
+          const rad = dy >= th ? 1 : 2;
+          for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) {
+            if (rad === 2 && Math.abs(dx) === 2 && Math.abs(dz) === 2 && hash3(wx + dx, y0 + dy, wz + dz) < .6) continue;
+            if (dy === th + 1 && Math.abs(dx) + Math.abs(dz) > 1) continue;
+            const lx = x + dx, lz = z + dz, ly = y0 + dy;
+            if (lx < 0 || lx >= CW || lz < 0 || lz >= CW || ly >= CH) continue;
+            const p = idx(lx, ly, lz); if (b[p] === 0) b[p] = 8;
+          }
+        }
+        if (innen) for (let dy = 0; dy < th; dy++) b[idx(x, y0 + dy, z)] = 7;
+      } else if (innen && b[idx(x, s.h, z)] === 1 && b[idx(x, s.h + 1, z)] === 0) {
+        const p = hash3(wx, 4, wz);
+        if (p < (s.biom === 'wiese' ? .12 : .05)) b[idx(x, s.h + 1, z)] = 23;
+        else if (p < (s.biom === 'wiese' ? .135 : .055)) b[idx(x, s.h + 1, z)] = hash3(wx, 5, wz) < .5 ? 21 : 22;
+      }
+    }
+    // gespeicherte Änderungen
+    const a = this.aend.get(this.key(cx, cz));
+    if (a) for (const [p, id] of a) b[p] = id;
+    return c;
+  }
+  // ---------- Licht ----------
+  hinzufuegen(c) {
+    this.chunks.set(this.key(c.cx, c.cz), c);
+    this.cache = c;
+    // Himmelslicht spaltenweise
+    const b = c.b, s = c.s, l = c.l;
+    for (let z = 0; z < CW; z++) for (let x = 0; x < CW; x++) {
+      let L = 15;
+      for (let y = CH - 1; y >= 0; y--) {
+        const p = idx(x, y, z), id = b[p];
+        if (OPAK[id]) L = 0; else if (id && L > 0) L = Math.max(0, L - (DAEMPF[id] - (id === 10 ? 1 : 0)));
+        s[p] = L;
+        if (LICHT[id]) l[p] = LICHT[id];
+      }
+    }
+    const qs = [], ql = [], x0 = c.cx * CW, z0 = c.cz * CW;
+    for (let y = 0; y < CH; y++) for (let z = 0; z < CW; z++) for (let x = 0; x < CW; x++) {
+      const p = idx(x, y, z);
+      if (s[p] > 1) {
+        // nur Zellen, die seitlich an dunklere durchsichtige Zellen grenzen
+        const L = s[p];
+        if ((x > 0 && !OPAK[b[p - 1]] && s[p - 1] < L - 1) || (x < 15 && !OPAK[b[p + 1]] && s[p + 1] < L - 1) ||
+          (z > 0 && !OPAK[b[p - CW]] && s[p - CW] < L - 1) || (z < 15 && !OPAK[b[p + CW]] && s[p + CW] < L - 1) ||
+          (y > 0 && !OPAK[b[p - 256]] && s[p - 256] < L - 1) || x === 0 || x === 15 || z === 0 || z === 15) qs.push(x0 + x, y, z0 + z);
+      }
+      if (l[p] > 1) ql.push(x0 + x, y, z0 + z);
+    }
+    // Ränder der Nachbarn einspeisen
+    const nb = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    for (const [dx, dz] of nb) {
+      const n = this.chunk(c.cx + dx, c.cz + dz); if (!n) continue;
+      const nx0 = n.cx * CW, nz0 = n.cz * CW;
+      for (let y = 0; y < CH; y++) for (let k = 0; k < CW; k++) {
+        const lx = dx === -1 ? 15 : dx === 1 ? 0 : k, lz = dz === -1 ? 15 : dz === 1 ? 0 : k;
+        const p = idx(lx, y, lz);
+        if (n.s[p] > 1) qs.push(nx0 + lx, y, nz0 + lz);
+        if (n.l[p] > 1) ql.push(nx0 + lx, y, nz0 + lz);
+      }
+    }
+    this.cache = null;
+    this.fluten(qs, 's'); this.fluten(ql, 'l');
+    c.status = 1;
+    this.schmutzig(c.cx, c.cz, true);
+  }
+  schmutzig(cx, cz, nachbarn) {
+    const c = this.chunk(cx, cz); if (c) c.dirty = true;
+    if (nachbarn) for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const n = this.chunk(cx + dx, cz + dz); if (n) n.dirty = true; }
+  }
+  licht(x, y, z, k) {
+    if (y < 0) return 0; if (y >= CH) return k === 's' ? 15 : 0;
+    const c = this.chunk(x >> 4, z >> 4); if (!c) return 0;
+    return c[k][idx(x & 15, y, z & 15)];
+  }
+  markiere(x, z) {
+    const lx = x & 15, lz = z & 15, cx = x >> 4, cz = z >> 4;
+    const c = this.chunk(cx, cz); if (c) c.dirty = true;
+    if (lx === 0) { const n = this.chunk(cx - 1, cz); if (n) n.dirty = true; }
+    if (lx === 15) { const n = this.chunk(cx + 1, cz); if (n) n.dirty = true; }
+    if (lz === 0) { const n = this.chunk(cx, cz - 1); if (n) n.dirty = true; }
+    if (lz === 15) { const n = this.chunk(cx, cz + 1); if (n) n.dirty = true; }
+    if (lx === 0 && lz === 0) { const n = this.chunk(cx - 1, cz - 1); if (n) n.dirty = true; }
+    if (lx === 15 && lz === 15) { const n = this.chunk(cx + 1, cz + 1); if (n) n.dirty = true; }
+    if (lx === 0 && lz === 15) { const n = this.chunk(cx - 1, cz + 1); if (n) n.dirty = true; }
+    if (lx === 15 && lz === 0) { const n = this.chunk(cx + 1, cz - 1); if (n) n.dirty = true; }
+  }
+  fluten(q, k) {
+    const istS = k === 's';
+    for (let i = 0; i < q.length; i += 3) {
+      const x = q[i], y = q[i + 1], z = q[i + 2];
+      const c = this.chunk(x >> 4, z >> 4); if (!c) continue;
+      const L = c[k][idx(x & 15, y, z & 15)];
+      if (L <= 1) continue;
+      for (let d = 0; d < 6; d++) {
+        let nx = x, ny = y, nz = z;
+        if (d === 0) nx++; else if (d === 1) nx--; else if (d === 2) ny++; else if (d === 3) ny--; else if (d === 4) nz++; else nz--;
+        if (ny < 0 || ny >= CH) continue;
+        const n = this.chunk(nx >> 4, nz >> 4); if (!n) continue;
+        const p = idx(nx & 15, ny, nz & 15), id = n.b[p];
+        if (OPAK[id]) continue;
+        const nl = (istS && d === 3 && L === 15 && !id) ? 15 : L - (DAEMPF[id] || 1);
+        if (nl > n[k][p]) { n[k][p] = nl; q.push(nx, ny, nz); this.markiere(nx, nz); }
+      }
+    }
+  }
+  entfernen(start, k) {
+    const istS = k === 's', neu = [];
+    for (let i = 0; i < start.length; i += 4) {
+      const x = start[i], y = start[i + 1], z = start[i + 2], L = start[i + 3];
+      for (let d = 0; d < 6; d++) {
+        let nx = x, ny = y, nz = z;
+        if (d === 0) nx++; else if (d === 1) nx--; else if (d === 2) ny++; else if (d === 3) ny--; else if (d === 4) nz++; else nz--;
+        if (ny < 0 || ny >= CH) continue;
+        const n = this.chunk(nx >> 4, nz >> 4); if (!n) continue;
+        const p = idx(nx & 15, ny, nz & 15), nl = n[k][p];
+        if (!nl) continue;
+        if (nl < L || (istS && d === 3 && L === 15 && nl === 15)) {
+          n[k][p] = 0; start.push(nx, ny, nz, nl); this.markiere(nx, nz);
+        } else neu.push(nx, ny, nz);
+      }
+    }
+    return neu;
+  }
+  // ---------- Block setzen ----------
+  set(x, y, z, id, meta) {
+    if (y < 0 || y >= CH) return false;
+    const cx = x >> 4, cz = z >> 4, c = this.chunk(cx, cz); if (!c) return false;
+    const p = idx(x & 15, y, z & 15), alt = c.b[p];
+    if (alt === id) return false;
+    c.b[p] = id;
+    const key = this.key(cx, cz);
+    let a = this.aend.get(key); if (!a) this.aend.set(key, a = new Map());
+    a.set(p, id);
+    const mk = x + ',' + y + ',' + z;
+    if (meta !== undefined) this.meta.set(mk, meta); else if (!BLOCK[id].vorne || BLOCK[id].vorne < 0) this.meta.delete(mk);
+    if (id && y > c.hoehe[(z & 15) * CW + (x & 15)]) c.hoehe[(z & 15) * CW + (x & 15)] = y;
+    // Licht aktualisieren
+    // 1) Blocklicht
+    const altL = c.l[p];
+    if (altL) { c.l[p] = 0; const neu = this.entfernen([x, y, z, altL], 'l'); this.fluten(neu, 'l'); }
+    if (LICHT[id]) { c.l[p] = LICHT[id]; this.fluten([x, y, z], 'l'); }
+    else if (!OPAK[id]) {
+      // Nachbarn hereinfluten lassen
+      const q = []; for (const [dx, dy, dz] of DIRS6) q.push(x + dx, y + dy, z + dz); this.fluten(q, 'l');
+    }
+    // 2) Himmelslicht
+    const altS = c.s[p];
+    if (OPAK[id] || (DAEMPF[id] > 1)) {
+      if (altS) { c.s[p] = 0; const neu = this.entfernen([x, y, z, altS], 's'); this.fluten(neu, 's'); }
+      if (!OPAK[id]) { const q = []; for (const [dx, dy, dz] of DIRS6) q.push(x + dx, y + dy, z + dz); this.fluten(q, 's'); }
+    } else {
+      const q = []; for (const [dx, dy, dz] of DIRS6) q.push(x + dx, y + dy, z + dz);
+      this.fluten(q, 's');
+    }
+    this.markiere(x, z);
+    return true;
+  }
+}
+const DIRS6 = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+
+// =====================================================================
+//  Meshing
+// =====================================================================
+// Flächen: Normale n, Tangenten u, v (u × v = n)
+const FLAECHEN = [
+  { n: [1, 0, 0], u: [0, 0, -1], v: [0, 1, 0], schatten: .8, seite: 2, r: 0 },
+  { n: [-1, 0, 0], u: [0, 0, 1], v: [0, 1, 0], schatten: .8, seite: 2, r: 1 },
+  { n: [0, 1, 0], u: [1, 0, 0], v: [0, 0, -1], schatten: 1, seite: 0, r: -1 },
+  { n: [0, -1, 0], u: [1, 0, 0], v: [0, 0, 1], schatten: .5, seite: 1, r: -1 },
+  { n: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0], schatten: .65, seite: 2, r: 2 },
+  { n: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0], schatten: .65, seite: 2, r: 3 }
+];
+const ECKEN = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+class Puffer {
+  constructor() { this.pos = []; this.uv = []; this.li = []; this.ao = []; this.ix = []; this.n = 0; }
+}
+function tileUV(t) { return [(t % 16) / 16, 1 - (Math.floor(t / 16) + 1) / 16]; }
+function meshBauen(welt, c) {
+  const fest = new Puffer(), kreuz = new Puffer(), wasser = new Puffer();
+  const x0 = c.cx * CW, z0 = c.cz * CW, b = c.b;
+  const E = 1 / 16 * .002;
+  // schneller Zugriff mit Nachbarn
+  const G = (x, y, z) => {
+    if (y < 0) return 11; if (y >= CH) return 0;
+    if (x >= 0 && x < CW && z >= 0 && z < CW) return b[idx(x, y, z)];
+    return welt.getFest(x0 + x, y, z0 + z);
+  };
+  const L = (x, y, z, k) => {
+    if (y >= CH) return k === 's' ? 15 : 0; if (y < 0) return 0;
+    if (x >= 0 && x < CW && z >= 0 && z < CW) return c[k][idx(x, y, z)];
+    return welt.licht(x0 + x, y, z0 + z, k);
+  };
+  let ymax = 0;
+  for (let i = 0; i < CW * CW; i++) ymax = Math.max(ymax, c.hoehe[i]);
+  ymax = Math.min(CH - 1, ymax + 12);
+  for (let y = 0; y <= ymax; y++) for (let z = 0; z < CW; z++) for (let x = 0; x < CW; x++) {
+    const id = b[idx(x, y, z)];
+    if (!id) continue;
+    const bl = BLOCK[id];
+    if (bl.form === 'kreuz') { kreuzFlaeche(kreuz, x, y, z, bl.tex[0], L(x, y, z, 's'), L(x, y, z, 'l')); continue; }
+    if (bl.form === 'fackel') { fackelMesh(kreuz, x, y, z, L(x, y, z, 's'), L(x, y, z, 'l')); continue; }
+    const istWasser = id === 10;
+    const ziel = istWasser ? wasser : fest;
+    for (let f = 0; f < 6; f++) {
+      const F = FLAECHEN[f], nx = x + F.n[0], ny = y + F.n[1], nz = z + F.n[2];
+      const nid = G(nx, ny, nz);
+      if (istWasser) { if (nid === 10 || OPAK[nid]) continue; }
+      else { if (OPAK[nid]) continue; if (nid === id && (id === 19 || id === 8)) continue; }
+      let tile = bl.tex[F.seite];
+      if (bl.vorne >= 0 && F.r >= 0) { const m = welt.meta.get((x0 + x) + ',' + y + ',' + (z0 + z)); if ((m === undefined ? 2 : m) === F.r) tile = bl.vorne; }
+      if (id === 1 && F.seite === 2 && G(x, y + 1, z) === 20) tile = T.schneeSeite;
+      const [u0, v0] = tileUV(tile);
+      const basis = ziel.n;
+      const aos = [0, 0, 0, 0];
+      for (let e = 0; e < 4; e++) {
+        const su = ECKEN[e][0], sv = ECKEN[e][1];
+        let px = x + .5 + .5 * F.n[0] + .5 * su * F.u[0] + .5 * sv * F.v[0];
+        let py = y + .5 + .5 * F.n[1] + .5 * su * F.u[1] + .5 * sv * F.v[1];
+        const pz = z + .5 + .5 * F.n[2] + .5 * su * F.u[2] + .5 * sv * F.v[2];
+        if (istWasser && py > y + .5 && G(x, y + 1, z) !== 10) py -= .12;
+        ziel.pos.push(px, py, pz);
+        ziel.uv.push(u0 + ((su + 1) / 2) / 16 * .998 + E, v0 + ((sv + 1) / 2) / 16 * .998 + E);
+        // AO + weiches Licht
+        const ax = nx + su * F.u[0], ay = ny + su * F.u[1], az = nz + su * F.u[2];
+        const bx = nx + sv * F.v[0], by = ny + sv * F.v[1], bz = nz + sv * F.v[2];
+        const cx_ = nx + su * F.u[0] + sv * F.v[0], cy_ = ny + su * F.u[1] + sv * F.v[1], cz_ = nz + su * F.u[2] + sv * F.v[2];
+        const s1 = OPAK[G(ax, ay, az)], s2 = OPAK[G(bx, by, bz)], s3 = OPAK[G(cx_, cy_, cz_)];
+        const ao = istWasser ? 3 : (s1 && s2 ? 0 : 3 - s1 - s2 - s3);
+        aos[e] = ao;
+        let ss = L(nx, ny, nz, 's'), ll = L(nx, ny, nz, 'l'), anz = 1;
+        if (!s1) { ss += L(ax, ay, az, 's'); ll += L(ax, ay, az, 'l'); anz++; }
+        if (!s2) { ss += L(bx, by, bz, 's'); ll += L(bx, by, bz, 'l'); anz++; }
+        if (!s3 && !(s1 && s2)) { ss += L(cx_, cy_, cz_, 's'); ll += L(cx_, cy_, cz_, 'l'); anz++; }
+        ziel.li.push(ss / anz, ll / anz);
+        ziel.ao.push((ao / 3 * .55 + .45) * F.schatten);
+      }
+      if (aos[0] + aos[2] < aos[1] + aos[3]) ziel.ix.push(basis + 1, basis + 2, basis + 3, basis + 1, basis + 3, basis);
+      else ziel.ix.push(basis, basis + 1, basis + 2, basis, basis + 2, basis + 3);
+      ziel.n += 4;
+    }
+  }
+  return { fest, kreuz, wasser };
+}
+function kreuzFlaeche(P, x, y, z, tile, s, l) {
+  const [u0, v0] = tileUV(tile), d = .35;
+  const quads = [[[-d, -d], [d, d]], [[-d, d], [d, -d]]];
+  for (const [[ax, az], [bx, bz]] of quads) {
+    const b = P.n;
+    P.pos.push(x + .5 + ax, y, z + .5 + az, x + .5 + bx, y, z + .5 + bz, x + .5 + bx, y + 1, z + .5 + bz, x + .5 + ax, y + 1, z + .5 + az);
+    P.uv.push(u0, v0, u0 + 1 / 16, v0, u0 + 1 / 16, v0 + 1 / 16, u0, v0 + 1 / 16);
+    for (let k = 0; k < 4; k++) { P.li.push(s, l); P.ao.push(.9); }
+    P.ix.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    P.n += 4;
+  }
+}
+function fackelMesh(P, x, y, z, s, l) {
+  const [u0, v0] = tileUV(T.fackel), w = 1 / 16;
+  const a = 7 / 16, bb = 9 / 16, h = 10 / 16;
+  const boxen = [
+    // vier Seiten
+    [[a, 0, bb], [bb, 0, bb], [bb, h, bb], [a, h, bb]], [[bb, 0, a], [a, 0, a], [a, h, a], [bb, h, a]],
+    [[bb, 0, bb], [bb, 0, a], [bb, h, a], [bb, h, bb]], [[a, 0, a], [a, 0, bb], [a, h, bb], [a, h, a]],
+    [[a, h, bb], [bb, h, bb], [bb, h, a], [a, h, a]]
+  ];
+  boxen.forEach((q, i) => {
+    const b = P.n;
+    for (const p of q) P.pos.push(x + p[0], y + p[1], z + p[2]);
+    if (i < 4) P.uv.push(u0 + 7 / 256, v0, u0 + 9 / 256, v0, u0 + 9 / 256, v0 + 10 / 256, u0 + 7 / 256, v0 + 10 / 256);
+    else P.uv.push(u0 + 7 / 256, v0 + 8 / 256, u0 + 9 / 256, v0 + 8 / 256, u0 + 9 / 256, v0 + 10 / 256, u0 + 7 / 256, v0 + 10 / 256);
+    for (let k = 0; k < 4; k++) { P.li.push(s, 15); P.ao.push(1); }
+    P.ix.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    P.n += 4;
+  });
+}
+
+// =====================================================================
+//  Eigene Pixel-Texturen (prozedural erzeugt)
+// =====================================================================
+const ATLAS = document.createElement('canvas'); ATLAS.width = ATLAS.height = 256;
+const actx = ATLAS.getContext('2d');
+function hex(c) { return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
+function kachel(t, f) {
+  const img = actx.createImageData(16, 16), r = rng(t * 7919 + 13);
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    const c = f(x, y, r);
+    const o = (y * 16 + x) * 4;
+    if (!c) { img.data[o + 3] = 0; continue; }
+    img.data[o] = clamp(c[0], 0, 255); img.data[o + 1] = clamp(c[1], 0, 255); img.data[o + 2] = clamp(c[2], 0, 255); img.data[o + 3] = c[3] === undefined ? 255 : c[3];
+  }
+  actx.putImageData(img, (t % 16) * 16, Math.floor(t / 16) * 16);
+}
+const variiere = (c, r, s) => { const v = (r() - .5) * s; return [c[0] + v, c[1] + v, c[2] + v]; };
+const misch = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const ERDE = hex('#7b5638'), GRAS = hex('#5f9d3c'), STEIN = hex('#808386'), HOLZ = hex('#b08a55'), RINDE = hex('#6a4a2c');
+function erdeF(x, y, r) { const c = variiere(ERDE, r, 26); return r() < .08 ? misch(c, [70, 48, 30], .6) : r() < .05 ? misch(c, [150, 120, 90], .4) : c; }
+function steinF(x, y, r) { const c = variiere(STEIN, r, 18); return r() < .1 ? misch(c, [95, 97, 100], .7) : c; }
+function erz(farbe, dunkel) {
+  return (x, y, r) => {
+    const c = steinF(x, y, r);
+    const cl = [[4, 4], [10, 5], [6, 10], [11, 11], [3, 13]];
+    for (const [cx, cy] of cl) { const d = Math.abs(x - cx) + Math.abs(y - cy); if (d <= 1) return d === 0 ? misch(farbe, [255, 255, 255], .25) : misch(farbe, dunkel, r() * .5); }
+    return c;
+  };
+}
+function zeichneTexturen() {
+  kachel(T.erde, erdeF);
+  kachel(T.grasOben, (x, y, r) => { const c = variiere(GRAS, r, 30); return r() < .12 ? misch(c, [70, 120, 40], .6) : c; });
+  kachel(T.grasSeite, (x, y, r) => {
+    const rand = 3 + ((x * 7 + 3) % 5 === 0 ? 1 : 0) + (x % 3 === 0 ? 1 : 0);
+    return y < rand ? variiere(misch(GRAS, [80, 130, 50], .3), r, 26) : erdeF(x, y, r);
+  });
+  kachel(T.stein, steinF);
+  kachel(T.bruch, (x, y, r) => {
+    const zx = Math.floor((x + (Math.floor(y / 5) % 2) * 3) / 6), zy = Math.floor(y / 5);
+    const rand = (x + (Math.floor(y / 5) % 2) * 3) % 6 === 0 || y % 5 === 0;
+    const basis = misch(STEIN, [110, 112, 115], hash3(zx, zy, 1) * .6);
+    return rand ? [70, 72, 75] : variiere(basis, r, 16);
+  });
+  kachel(T.sand, (x, y, r) => variiere(hex('#ddd096'), r, 18));
+  kachel(T.kies, (x, y, r) => { const k = hash3(Math.floor(x / 3), Math.floor(y / 3), 9); return variiere(k < .3 ? [140, 130, 125] : k < .6 ? [110, 104, 100] : [160, 150, 140], r, 22); });
+  kachel(T.stammSeite, (x, y, r) => variiere(x % 4 === 0 ? misch(RINDE, [0, 0, 0], .3) : RINDE, r, 18));
+  kachel(T.stammOben, (x, y, r) => { const d = Math.hypot(x - 7.5, y - 7.5); return d > 7 ? RINDE : variiere(Math.floor(d) % 3 === 0 ? misch(HOLZ, [90, 60, 30], .5) : HOLZ, r, 12); });
+  kachel(T.laub, (x, y, r) => r() < .2 ? null : variiere(hex('#3f7f2d'), r, 40));
+  kachel(T.bretter, (x, y, r) => {
+    const naht = y % 4 === 3 || (x === ((Math.floor(y / 4) * 7) % 16));
+    return naht ? misch(HOLZ, [60, 40, 20], .55) : variiere(HOLZ, r, 16);
+  });
+  kachel(T.wasser, (x, y, r) => { const w = Math.sin(x * .8 + y * .4) * 10; return [50 + w, 95 + w, 200 + w, 180]; });
+  kachel(T.grund, (x, y, r) => variiere(r() < .5 ? [60, 60, 62] : [35, 35, 38], r, 20));
+  kachel(T.kohle, erz([28, 28, 30], [60, 60, 60]));
+  kachel(T.eisen, erz([200, 150, 110], [150, 100, 70]));
+  kachel(T.gold, erz([245, 210, 60], [200, 150, 30]));
+  kachel(T.saphir, erz([40, 80, 220], [20, 40, 140]));
+  kachel(T.werkOben, (x, y, r) => (x === 0 || y === 0 || x === 15 || y === 15) ? misch(HOLZ, [50, 30, 10], .6) : (x === 7 || y === 7) ? misch(HOLZ, [60, 40, 20], .4) : variiere(HOLZ, r, 14));
+  kachel(T.werkSeite, (x, y, r) => {
+    if (y < 3) return misch(HOLZ, [50, 30, 10], .5);
+    if ((x === 4 && y > 5 && y < 13) || (y === 6 && x > 2 && x < 7)) return [140, 140, 150];
+    if ((x === 11 && y > 6 && y < 14) || (y === 7 && x > 9 && x < 13)) return [90, 60, 40];
+    return variiere(misch(HOLZ, [0, 0, 0], .1), r, 14);
+  });
+  const ofenStein = (x, y, r) => (y % 4 === 0 || (x + (Math.floor(y / 4) % 2) * 4) % 8 === 0) ? [80, 82, 85] : variiere([125, 127, 130], r, 14);
+  kachel(T.ofenSeite, ofenStein);
+  kachel(T.ofenOben, (x, y, r) => variiere([110, 112, 115], r, 18));
+  kachel(T.ofenVorne, (x, y, r) => (x > 3 && x < 12 && y > 7 && y < 14) ? [25, 25, 27] : ofenStein(x, y, r));
+  kachel(T.ofenAn, (x, y, r) => (x > 3 && x < 12 && y > 7 && y < 14) ? (y > 10 ? [255, 160 + r() * 60, 40] : [200, 80, 20]) : ofenStein(x, y, r));
+  kachel(T.fackel, (x, y, r) => {
+    if ((x === 7 || x === 8) && y >= 9) return [110, 80, 45];
+    if ((x === 7 || x === 8) && y >= 6 && y <= 8) return y === 6 ? [255, 250, 200] : [255, 190, 60];
+    return null;
+  });
+  kachel(T.glas, (x, y, r) => (x === 0 || y === 0 || x === 15 || y === 15) ? [210, 230, 240] : (x - y === 4 || x - y === 5) && x > 6 ? [240, 250, 255] : null);
+  kachel(T.schnee, (x, y, r) => variiere([240, 244, 250], r, 12));
+  kachel(T.schneeSeite, (x, y, r) => y < 4 + (x % 3 === 0 ? 1 : 0) ? variiere([240, 244, 250], r, 10) : erdeF(x, y, r));
+  const blume = (bf, mitte) => (x, y, r) => {
+    if (x === 7 && y > 7) return [50, 120, 40];
+    if (y === 11 && (x === 6 || x === 8)) return [60, 140, 50];
+    const d = Math.abs(x - 7) + Math.abs(y - 5);
+    if (d === 0) return mitte; if (d <= 2) return variiere(bf, r, 20);
+    return null;
+  };
+  kachel(T.blumeRot, blume([210, 40, 50], [250, 220, 80]));
+  kachel(T.blumeGelb, blume([245, 215, 50], [200, 120, 30]));
+  kachel(T.grasHoch, (x, y, r) => { const h = 5 + ((x * 5) % 7); return (x % 2 === 1 && y >= 16 - h && x > 1 && x < 15) ? variiere([90, 150, 60], r, 30) : null; });
+  const truhe = (x, y, r) => (x === 0 || x === 15 || y === 0 || y === 15) ? [70, 45, 20] : variiere(misch(HOLZ, [120, 70, 20], .3), r, 14);
+  kachel(T.truheSeite, (x, y, r) => y === 5 ? [70, 45, 20] : truhe(x, y, r));
+  kachel(T.truheOben, truhe);
+  kachel(T.truheVorne, (x, y, r) => (x >= 7 && x <= 8 && y >= 4 && y <= 7) ? [200, 200, 210] : y === 5 ? [70, 45, 20] : truhe(x, y, r));
+  kachel(T.ziegel, (x, y, r) => (y % 8 === 0 || (x + (Math.floor(y / 8) % 2) * 8) % 16 === 0) ? [80, 82, 85] : variiere([128, 130, 132], r, 12));
+  kachel(T.setzling, (x, y, r) => { if (x === 7 && y > 8) return [100, 70, 40]; const d = Math.hypot(x - 7, y - 6); return d < 4.5 && r() > .2 ? variiere([70, 140, 50], r, 30) : null; });
+  kachel(T.sandsteinSeite, (x, y, r) => variiere(y < 3 ? hex('#e3d39a') : y % 5 === 0 ? hex('#c9b77c') : hex('#d8c88e'), r, 10));
+  kachel(T.sandsteinOben, (x, y, r) => variiere(hex('#e3d39a'), r, 10));
+  kachel(T.wolle, (x, y, r) => variiere([232, 228, 218], r, 16));
+  kachel(T.bettOben, (x, y, r) => y < 5 ? variiere([240, 240, 235], r, 8) : variiere([175, 40, 45], r, 16));
+  kachel(T.bettSeite, (x, y, r) => y < 9 ? variiere([175, 40, 45], r, 16) : (x < 2 || x > 13) ? misch(HOLZ, [40, 20, 0], .3) : null);
+  kachel(T.kaktusSeite, (x, y, r) => (x === 0 || x === 15) ? null : variiere(x % 5 === 2 ? [40, 110, 40] : [70, 150, 60], r, 18));
+  kachel(T.kaktusOben, (x, y, r) => variiere([80, 160, 70], r, 18));
+  // Gegenstände
+  kachel(T.stock, (x, y) => (x + y === 15 || x + y === 16) && x > 2 && x < 14 ? [120, 85, 45] : null);
+  kachel(T.kohleItem, (x, y, r) => Math.hypot(x - 7.5, (y - 8) * 1.2) < 5.5 ? variiere([35, 35, 38], r, 22) : null);
+  const barren = (c) => (x, y, r) => (y >= 6 && y <= 11 && x >= 2 + (11 - y) * .5 && x <= 13 - (11 - y) * .5) ? (y === 6 ? misch(c, [255, 255, 255], .4) : variiere(c, r, 14)) : null;
+  kachel(T.eisenbarren, barren([200, 202, 208]));
+  kachel(T.goldbarren, barren([240, 200, 60]));
+  kachel(T.saphirItem, (x, y, r) => { const d = Math.abs(x - 7.5) + Math.abs(y - 8) * 1.2; return d < 6 ? (d < 2 ? [180, 210, 255] : variiere([45, 90, 220], r, 26)) : null; });
+  const apfel = (c) => (x, y, r) => { if (x === 8 && y < 4 && y > 0) return [90, 60, 30]; return Math.hypot(x - 7.5, y - 9) < 5.5 ? (x < 6 && y < 8 ? misch(c, [255, 255, 255], .4) : variiere(c, r, 20)) : null; };
+  kachel(T.apfel, apfel([200, 35, 40]));
+  kachel(T.goldapfel, apfel([245, 200, 50]));
+  const fleisch = (c, f) => (x, y, r) => { const d = Math.hypot((x - 7) * .9, y - 8); return d < 5.5 ? (d > 4.3 ? f : variiere(c, r, 20)) : null; };
+  kachel(T.fleisch, fleisch([215, 90, 95], [240, 230, 220]));
+  kachel(T.bratfleisch, fleisch([140, 80, 40], [100, 55, 25]));
+  kachel(T.faden, (x, y) => Math.abs(Math.sin(x * .7) * 4 + 8 - y) < .9 && x > 1 && x < 15 ? [240, 240, 240] : null);
+  kachel(T.leder, (x, y, r) => (x > 2 && x < 13 && y > 3 && y < 13 && !(x < 4 && y < 5) && !(x > 11 && y > 11)) ? variiere([150, 90, 50], r, 20) : null);
+  // Werkzeuge
+  const FORMEN = [
+    ['....kkkkkkkk....', '..kkkkkkkkkkkk..', '.kk....hh....kk.', '.k.....hh.....k.', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '................', '................'],
+    ['.......kkkk.....', '......kkkkkk....', '.....kkkkkkkk...', '.....kkkhhkkk...', '......kkhhkk....', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '................', '................'],
+    ['......kkkk......', '.....kkkkkk.....', '.....kkkkkk.....', '.....kkkkkk.....', '......kkkk......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '.......hh.......', '......hhhh......', '................', '................'],
+    ['.......kk.......', '......kkkk......', '......kkkk......', '......kkkk......', '......kkkk......', '......kkkk......', '......kkkk......', '......kkkk......', '......kkkk......', '...hhhhhhhhhh...', '.......hh.......', '.......hh.......', '.......hh.......', '......hhhh......', '................', '................']
+  ];
+  const STUFENFARBE = [[170, 130, 80], [130, 132, 136], [215, 218, 225], [60, 110, 230]];
+  for (let t = 0; t < 4; t++) for (let k = 0; k < 4; k++) {
+    kachel(T.werkzeug + t * 4 + k, (x, y, r) => {
+      const ch = FORMEN[k][y][x];
+      if (ch === 'h') return [110, 75, 40];
+      if (ch === 'k') return variiere(STUFENFARBE[t], r, 18);
+      return null;
+    });
+  }
+  // Risse
+  for (let s = 0; s < 10; s++) {
+    kachel(T.riss + s, (x, y) => {
+      for (let k = 0; k <= s; k++) {
+        const a = hash3(k, 3, 7) * 6.28, cx = 8 + Math.cos(a) * k * .5, cy = 8 + Math.sin(a) * k * .5;
+        const d = Math.abs((x - 8) * Math.sin(a + k) - (y - 8) * Math.cos(a + k));
+        if (d < .6 && Math.hypot(x - cx, y - cy) < 3 + k * .7) return [0, 0, 0, 170];
+      }
+      return null;
+    });
+  }
+}
+// Symbole für das Inventar (Blöcke als kleiner Würfel)
+const ICONS = new Map();
+function icon(id) {
+  if (ICONS.has(id)) return ICONS.get(id);
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  const it = ITEM[id];
+  const tileXY = t => [(t % 16) * 16, Math.floor(t / 16) * 16];
+  if (it && it.block && BLOCK[id].form === 'wuerfel' || (it && it.block && BLOCK[id].form === 'fluessig')) {
+    const bl = BLOCK[id];
+    const [tx, ty] = tileXY(bl.tex[0]), [sx, sy] = tileXY(bl.vorne >= 0 ? bl.vorne : bl.tex[2]), [rx, ry] = tileXY(bl.tex[2]);
+    // oben
+    g.save(); g.translate(16, 2); g.transform(1, .5, -1, .5, 0, 0); g.drawImage(ATLAS, tx, ty, 16, 16, 0, 0, 14, 14); g.restore();
+    // links
+    g.save(); g.translate(2, 9); g.transform(1, .5, 0, 1, 0, 0); g.drawImage(ATLAS, sx, sy, 16, 16, 0, 0, 14, 16); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 0, 14, 16); g.restore();
+    // rechts
+    g.save(); g.translate(16, 16); g.transform(1, -.5, 0, 1, 0, 0); g.drawImage(ATLAS, rx, ry, 16, 16, 0, 0, 14, 16); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, 14, 16); g.restore();
+  } else {
+    const t = it && it.block ? BLOCK[id].tex[0] : it ? it.tile : 0;
+    const [tx, ty] = tileXY(t);
+    g.drawImage(ATLAS, tx, ty, 16, 16, 0, 0, 32, 32);
+  }
+  ICONS.set(id, c);
+  return c;
+}
+
+// =====================================================================
+//  BLOCKHEIM – Spiel: Darstellung, Spieler, Inventar, Wesen, Speichern
+// =====================================================================
+const $ = id => document.getElementById(id);
+const ZF = Number(new URLSearchParams(location.search).get('zeitfaktor')) || 1;
+const istTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+zeichneTexturen();
+
+// ---------------- Renderer ----------------
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, istTouch ? 1.25 : 1.5));
+renderer.setSize(innerWidth, innerHeight);
+$('welt').appendChild(renderer.domElement);
+const szene = new THREE.Scene();
+const kamera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, .05, 1200);
+kamera.rotation.order = 'YXZ';
+szene.add(kamera);
+const atlasTex = new THREE.CanvasTexture(ATLAS);
+atlasTex.magFilter = THREE.NearestFilter; atlasTex.minFilter = THREE.NearestFilter; atlasTex.generateMipmaps = false;
+const U = {
+  uAtlas: { value: atlasTex }, uTag: { value: 1 }, uNebel: { value: new THREE.Color('#9cc4ee') },
+  uNebelNah: { value: 40 }, uNebelFern: { value: 80 }, uFackel: { value: 1 }
+};
+const VS = `attribute vec2 aLicht; attribute float aAO; varying vec2 vUv; varying vec2 vL; varying float vAO; varying float vT;
+void main(){ vUv = uv; vL = aLicht; vAO = aAO; vec4 mv = modelViewMatrix * vec4(position, 1.); vT = length(mv.xyz); gl_Position = projectionMatrix * mv; }`;
+const FS = `uniform sampler2D uAtlas; uniform float uTag; uniform vec3 uNebel; uniform float uNebelNah; uniform float uNebelFern; uniform float uAlpha; uniform float uFackel;
+varying vec2 vUv; varying vec2 vL; varying float vAO; varying float vT;
+void main(){
+  vec4 t = texture2D(uAtlas, vUv);
+  if (uAlpha > .99 && t.a < .5) discard;
+  float s = pow(.82, 15. - vL.x) * uTag;
+  float b = pow(.82, 15. - vL.y) * uFackel;
+  vec3 li = max(vec3(s), vec3(1., .86, .62) * b);
+  li = max(li, vec3(.04));
+  vec3 c = t.rgb * li * vAO;
+  float f = smoothstep(uNebelNah, uNebelFern, vT);
+  gl_FragColor = vec4(mix(c, uNebel, f), uAlpha > .99 ? 1. : t.a * uAlpha);
+}`;
+function blockMat(alpha, seite) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uAtlas: U.uAtlas, uTag: U.uTag, uNebel: U.uNebel, uNebelNah: U.uNebelNah, uNebelFern: U.uNebelFern, uFackel: U.uFackel, uAlpha: { value: alpha } },
+    vertexShader: VS, fragmentShader: FS, transparent: alpha < 1, depthWrite: alpha >= 1, side: seite || THREE.FrontSide
+  });
+}
+const MAT_FEST = blockMat(1), MAT_KREUZ = blockMat(1, THREE.DoubleSide), MAT_WASSER = blockMat(.82, THREE.DoubleSide);
+
+// ---------------- Himmel ----------------
+const sonne = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 4, 32, 32, 32); gr.addColorStop(0, '#fffbe8'); gr.addColorStop(.35, '#fff1b0'); gr.addColorStop(.36, 'rgba(255,230,150,.45)'); gr.addColorStop(1, 'rgba(255,220,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })(), fog: false, depthWrite: false }));
+sonne.scale.set(90, 90, 1); szene.add(sonne);
+const mond = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d'); g.fillStyle = '#dfe6f2'; g.beginPath(); g.arc(16, 16, 10, 0, 7); g.fill(); g.fillStyle = '#b9c2d3'; g.beginPath(); g.arc(12, 13, 3, 0, 7); g.arc(20, 19, 2, 0, 7); g.fill(); return new THREE.CanvasTexture(c); })(), fog: false, depthWrite: false }));
+mond.scale.set(40, 40, 1); szene.add(mond);
+const sterne = (() => { const p = []; const r = rng(42); for (let i = 0; i < 900; i++) { const u = r() * 2 - 1, a = r() * 6.28, s = Math.sqrt(1 - u * u); p.push(s * Math.cos(a) * 500, Math.abs(u) * 500, s * Math.sin(a) * 500); } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); return new THREE.Points(g, new THREE.PointsMaterial({ color: '#fff', size: 1.6, sizeAttenuation: false, transparent: true, fog: false, depthWrite: false })); })();
+szene.add(sterne);
+const wolkenTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const r = rng(7); for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { const v = Rauschen(5).fbm2(x / 9, y / 9, 3); if (v > .12) { g.fillStyle = 'rgba(255,255,255,.88)'; g.fillRect(x, y, 1, 1); } } const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 4); return t; })();
+const wolken = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: wolkenTex, transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+wolken.position.y = 118; szene.add(wolken);
+
+// ---------------- Auswahlrahmen, Risse, Partikel ----------------
+const rahmen = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)), new THREE.LineBasicMaterial({ color: '#111', transparent: true, opacity: .6 }));
+rahmen.visible = false; szene.add(rahmen);
+const rissTex = [];
+for (let s = 0; s < 10; s++) { const c = document.createElement('canvas'); c.width = c.height = 16; c.getContext('2d').drawImage(ATLAS, ((T.riss + s) % 16) * 16, Math.floor((T.riss + s) / 16) * 16, 16, 16, 0, 0, 16, 16); const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; rissTex.push(t); }
+const riss = new THREE.Mesh(new THREE.BoxGeometry(1.006, 1.006, 1.006), new THREE.MeshBasicMaterial({ map: rissTex[0], transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+riss.visible = false; szene.add(riss);
+const PARTIKEL = [];
+const partGeo = new THREE.BoxGeometry(.1, .1, .1);
+function tileFarbe(t) { const d = actx.getImageData((t % 16) * 16 + 6, Math.floor(t / 16) * 16 + 6, 4, 4).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; } return n ? new THREE.Color(r / n / 255, g / n / 255, b / n / 255) : new THREE.Color('#888'); }
+const FARBCACHE = new Map();
+function partikel(x, y, z, farbe, anz, kraft) {
+  for (let i = 0; i < anz; i++) {
+    const m = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: farbe }));
+    m.position.set(x + (Math.random() - .5) * .6, y + (Math.random() - .5) * .6, z + (Math.random() - .5) * .6);
+    m.userData = { v: new THREE.Vector3((Math.random() - .5) * kraft, Math.random() * kraft + 1, (Math.random() - .5) * kraft), t: .5 + Math.random() * .4 };
+    szene.add(m); PARTIKEL.push(m);
+  }
+}
+function partikelUpdate(dt) {
+  for (let i = PARTIKEL.length - 1; i >= 0; i--) {
+    const m = PARTIKEL[i], u = m.userData;
+    u.t -= dt; u.v.y -= 14 * dt; m.position.addScaledVector(u.v, dt);
+    if (SOLID[welt.get(Math.floor(m.position.x), Math.floor(m.position.y), Math.floor(m.position.z))]) { u.v.set(0, 0, 0); }
+    if (u.t <= 0) { szene.remove(m); m.material.dispose(); PARTIKEL.splice(i, 1); }
+  }
+}
+
+// ---------------- Hand / gehaltener Gegenstand ----------------
+const handGr = new THREE.Group(); kamera.add(handGr);
+handGr.position.set(.52, -.48, -.85);
+const handArm = new THREE.Mesh(new THREE.BoxGeometry(.16, .16, .55), new THREE.MeshBasicMaterial({ color: '#d9a27a', depthTest: false }));
+handArm.rotation.set(.5, .2, 0); handArm.renderOrder = 10; handGr.add(handArm);
+const handItem = new THREE.Mesh(new THREE.PlaneGeometry(.42, .42), new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, side: THREE.DoubleSide }));
+handItem.renderOrder = 11; handItem.rotation.set(-.2, -.6, .1); handItem.position.set(-.02, .12, -.12); handGr.add(handItem);
+const ICONTEX = new Map();
+function iconTex(id) { if (!ICONTEX.has(id)) { const t = new THREE.CanvasTexture(icon(id)); t.magFilter = THREE.NearestFilter; ICONTEX.set(id, t); } return ICONTEX.get(id); }
+let schwung = 0;
+
+// ---------------- Ton ----------------
+let ac = null, tonAn = true, master;
+function audioStart() { if (ac) { if (ac.state === 'suspended') ac.resume(); return; } try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = tonAn ? .5 : 0; master.connect(ac.destination); } catch (e) { ac = null; } }
+function rauschKlang(dauer, freq, laut, typ) {
+  if (!ac || !tonAn) return;
+  const n = Math.floor(ac.sampleRate * dauer), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+  const s = ac.createBufferSource(); s.buffer = buf;
+  const f = ac.createBiquadFilter(); f.type = typ || 'lowpass'; f.frequency.value = freq;
+  const g = ac.createGain(); g.gain.value = laut;
+  s.connect(f); f.connect(g); g.connect(master); s.start();
+}
+function ton(f0, f1, dauer, laut, typ) {
+  if (!ac || !tonAn) return;
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = typ || 'sine';
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dauer);
+  g.gain.setValueAtTime(laut, t); g.gain.exponentialRampToValueAtTime(.001, t + dauer);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dauer + .02);
+}
+const KLANG = {
+  abbau: (id) => rauschKlang(.12, [3, 4, 12, 13, 14, 15, 17, 25, 27].includes(id) ? 2400 : [7, 9, 16, 24].includes(id) ? 900 : 1300, .5),
+  setzen: () => rauschKlang(.08, 1100, .4),
+  hau: () => rauschKlang(.06, 3000, .25, 'highpass'),
+  pop: () => ton(500, 900, .08, .15, 'triangle'),
+  au: () => { ton(320, 180, .18, .3, 'square'); },
+  essen: () => rauschKlang(.15, 700, .3, 'bandpass'),
+  monster: () => ton(110, 70, .5, .12, 'sawtooth'),
+  tier: () => ton(260, 200, .25, .08, 'triangle')
+};
+
+// =====================================================================
+//  Welt & Chunks
+// =====================================================================
+let welt = null, sichtweite = istTouch ? 4 : 5;
+const RINGE = []; for (let dz = -12; dz <= 12; dz++) for (let dx = -12; dx <= 12; dx++) RINGE.push([dx, dz, dx * dx + dz * dz]);
+RINGE.sort((a, b) => a[2] - b[2]);
+function geometrie(P) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P.pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(P.uv, 2));
+  g.setAttribute('aLicht', new THREE.Float32BufferAttribute(P.li, 2));
+  g.setAttribute('aAO', new THREE.Float32BufferAttribute(P.ao, 1));
+  g.setIndex(P.n > 65535 ? new THREE.Uint32BufferAttribute(P.ix, 1) : new THREE.Uint16BufferAttribute(P.ix, 1));
+  g.computeBoundingSphere();
+  return g;
+}
+function meshEntfernen(c) { if (c.mesh) { for (const m of c.mesh) { szene.remove(m); m.geometry.dispose(); } c.mesh = null; } }
+let meshZaehler = 0;
+function meshAktualisieren(c) {
+  meshZaehler++;
+  const r = meshBauen(welt, c);
+  meshEntfernen(c);
+  c.mesh = [];
+  const add = (P, mat) => { if (!P.n) return; const m = new THREE.Mesh(geometrie(P), mat); m.position.set(c.cx * CW, 0, c.cz * CW); m.matrixAutoUpdate = false; m.updateMatrix(); szene.add(m); c.mesh.push(m); };
+  add(r.fest, MAT_FEST); add(r.kreuz, MAT_KREUZ); add(r.wasser, MAT_WASSER);
+  c.dirty = false;
+}
+function sofortNeu(x, z) {
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const c = welt.chunk((x >> 4) + dx, (z >> 4) + dz); if (c && c.dirty && c.mesh && nachbarnDa(c.cx, c.cz)) meshAktualisieren(c); }
+}
+function nachbarnDa(cx, cz) { for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) if (!welt.chunk(cx + dx, cz + dz)) return false; return true; }
+function chunkPflege(budget) {
+  const t0 = performance.now(), pcx = Math.floor(sp.x / CW), pcz = Math.floor(sp.z / CW);
+  const R = sichtweite;
+  // 0) nahe, veränderte Chunks zuerst neu bauen
+  for (const [dx, dz, d2] of RINGE) {
+    if (d2 > 5) break;
+    const c = welt.chunk(pcx + dx, pcz + dz);
+    if (c && c.dirty && nachbarnDa(c.cx, c.cz)) { meshAktualisieren(c); if (performance.now() - t0 > budget * 2) return false; }
+  }
+  // 1) erzeugen
+  for (const [dx, dz, d2] of RINGE) {
+    if (d2 > (R + 1.5) * (R + 1.5)) break;
+    const cx = pcx + dx, cz = pcz + dz;
+    if (!welt.chunk(cx, cz)) { welt.hinzufuegen(welt.generieren(cx, cz)); if (performance.now() - t0 > budget) return false; }
+  }
+  // 2) Meshes bauen
+  for (const [dx, dz, d2] of RINGE) {
+    if (d2 > (R + .5) * (R + .5)) break;
+    const c = welt.chunk(pcx + dx, pcz + dz);
+    if (c && c.dirty && nachbarnDa(c.cx, c.cz)) { meshAktualisieren(c); if (performance.now() - t0 > budget) return false; }
+  }
+  // 3) entfernte Chunks entladen
+  for (const [k, c] of welt.chunks) {
+    const dx = c.cx - pcx, dz = c.cz - pcz;
+    if (dx * dx + dz * dz > (R + 4) * (R + 4)) { meshEntfernen(c); welt.chunks.delete(k); welt.cache = null; }
+    else if (c.mesh && dx * dx + dz * dz > (R + 1) * (R + 1)) meshEntfernen(c), c.dirty = true;
+  }
+  return true;
+}
+
+// =====================================================================
+//  Spieler
+// =====================================================================
+const BREITE = .3, HOEHE = 1.8;
+const sp = {
+  x: .5, y: 80, z: .5, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, amBoden: false, imWasser: false, kopfWasser: false,
+  hp: 20, hunger: 20, saett: 5, erschoepf: 0, luft: 10, luftT: 0, maxY: 0, inv: new Array(36).fill(null), wahl: 0,
+  spawn: null, schutzT: 0, regenT: 0, hungerT: 0, ducken: false, sprint: false, essenT: 0, angriffCd: 0, schrittWeg: 0, wackel: 0, tot: false
+};
+function kollidiert(x, y, z, hw, h) {
+  const x0 = Math.floor(x - hw), x1 = Math.floor(x + hw - 1e-6), y0 = Math.floor(y), y1 = Math.floor(y + h - 1e-6), z0 = Math.floor(z - hw), z1 = Math.floor(z + hw - 1e-6);
+  for (let by = y0; by <= y1; by++) for (let bz = z0; bz <= z1; bz++) for (let bx = x0; bx <= x1; bx++) if (SOLID[welt.getFest(bx, by, bz)]) return true;
+  return false;
+}
+// bewegt Körper e entlang einer Achse; liefert true bei Kollision
+function achse(e, a, d, hw, h) {
+  if (!d) return false;
+  const n = Math.ceil(Math.abs(d) / .25), sd = d / n;
+  for (let i = 0; i < n; i++) {
+    if (a === 0) { e.x += sd; if (kollidiert(e.x, e.y, e.z, hw, h)) { e.x = sd > 0 ? Math.floor(e.x + hw) - hw - 1e-4 : Math.floor(e.x - hw) + 1 + hw + 1e-4; return true; } }
+    else if (a === 1) { e.y += sd; if (kollidiert(e.x, e.y, e.z, hw, h)) { e.y = sd > 0 ? Math.floor(e.y + h) - h - 1e-4 : Math.floor(e.y) + 1 + 1e-4; return true; } }
+    else { e.z += sd; if (kollidiert(e.x, e.y, e.z, hw, h)) { e.z = sd > 0 ? Math.floor(e.z + hw) - hw - 1e-4 : Math.floor(e.z - hw) + 1 + hw + 1e-4; return true; } }
+  }
+  return false;
+}
+const tasten = {};
+const touchBew = { x: 0, y: 0 };
+let sprungTouch = false, abbauHalten = false, rechtsHalten = false;
+function spielerPhysik(dt) {
+  const h = sp.ducken ? 1.5 : HOEHE;
+  const fw = (tasten.KeyW ? 1 : 0) - (tasten.KeyS ? 1 : 0) + touchBew.y, st = (tasten.KeyD ? 1 : 0) - (tasten.KeyA ? 1 : 0) + touchBew.x;
+  sp.ducken = !!(tasten.ShiftLeft || tasten.ShiftRight || duckenTouch);
+  const springen = tasten.Space || sprungTouch;
+  if (fw <= 0 || sp.ducken || sp.hunger <= 6) sp.sprint = false;
+  else if (tasten.ControlLeft || sprintTouch) sp.sprint = true;
+  const fussId = welt.get(Math.floor(sp.x), Math.floor(sp.y + .2), Math.floor(sp.z));
+  const kopfId = welt.get(Math.floor(sp.x), Math.floor(sp.y + (sp.ducken ? 1.25 : 1.6)), Math.floor(sp.z));
+  sp.imWasser = fussId === 10 || welt.get(Math.floor(sp.x), Math.floor(sp.y + .9), Math.floor(sp.z)) === 10;
+  sp.kopfWasser = kopfId === 10;
+  let speed = sp.ducken ? 1.3 : sp.sprint ? 5.6 : 4.3;
+  if (sp.imWasser) speed *= .55;
+  if (sp.essenT > 0) speed *= .35;
+  const len = Math.hypot(fw, st) || 1, f = Math.min(1, Math.hypot(fw, st));
+  const sy = Math.sin(sp.yaw), cy = Math.cos(sp.yaw);
+  const zx = (-sy * fw + cy * st) / len * f * speed, zz = (-cy * fw - sy * st) / len * f * speed;
+  const k = sp.amBoden ? 14 : sp.imWasser ? 5 : 2.5;
+  sp.vx += (zx - sp.vx) * Math.min(1, dt * k); sp.vz += (zz - sp.vz) * Math.min(1, dt * k);
+  if (sp.imWasser) {
+    sp.vy -= 9 * dt; sp.vy *= Math.pow(.2, dt);
+    if (springen) sp.vy = Math.min(sp.vy + 26 * dt, 3.2);
+    sp.maxY = sp.y;
+  } else {
+    sp.vy -= 30 * dt; if (sp.vy < -55) sp.vy = -55;
+    if (springen && sp.amBoden) { sp.vy = 8.4; sp.erschoepf += sp.sprint ? .2 : .05; if (sp.sprint) { sp.vx += -sy * 1.6; sp.vz += -cy * 1.6; } }
+  }
+  // Kante beim Ducken
+  let dx = sp.vx * dt, dz = sp.vz * dt;
+  if (sp.ducken && sp.amBoden) {
+    if (!kollidiert(sp.x + dx, sp.y - .1, sp.z, BREITE, .1)) dx = 0;
+    if (!kollidiert(sp.x, sp.y - .1, sp.z + dz, BREITE, .1)) dz = 0;
+  }
+  const vorY = sp.y;
+  const unten = achse(sp, 1, sp.vy * dt, BREITE, h);
+  if (unten) { if (sp.vy < 0) { if (!sp.amBoden) landen(); sp.amBoden = true; } sp.vy = 0; }
+  else sp.amBoden = false;
+  if (achse(sp, 0, dx, BREITE, h)) sp.vx = 0;
+  if (achse(sp, 2, dz, BREITE, h)) sp.vz = 0;
+  if (!sp.amBoden && !sp.imWasser) sp.maxY = Math.max(sp.maxY, sp.y); else if (sp.imWasser) sp.maxY = sp.y;
+  if (sp.amBoden) sp.maxY = sp.y;
+  const weg = Math.hypot(dx, dz);
+  if (sp.sprint) sp.erschoepf += weg * .1;
+  sp.schrittWeg += weg; if (sp.amBoden && weg > 0) sp.wackel += weg * 2.2;
+  if (sp.y < -40) schaden(4, 'ins Nichts gefallen');
+  if (sp.schutzT <= 0) {
+    for (let by = Math.floor(sp.y); by <= Math.floor(sp.y + 1.7); by++) for (let bz = Math.floor(sp.z - .36); bz <= Math.floor(sp.z + .36); bz++) for (let bx = Math.floor(sp.x - .36); bx <= Math.floor(sp.x + .36); bx++)
+      if (welt.get(bx, by, bz) === 31) { schaden(1, 'Kaktus'); return; }
+  }
+}
+function landen() {
+  const fall = sp.maxY - sp.y;
+  if (fall > 3.4 && !sp.imWasser) { schaden(Math.floor(fall - 3), 'Fallschaden'); KLANG.hau(); }
+  sp.maxY = sp.y;
+}
+
+// =====================================================================
+//  Inventar-Hilfen
+// =====================================================================
+const stapelMax = id => (ITEM[id] && ITEM[id].stapel) || 64;
+function hinzufuegen(stack) {
+  // gibt Rest zurück
+  let n = stack.n;
+  const reihen = [...Array(9).keys(), ...Array.from({ length: 27 }, (_, i) => i + 9)];
+  for (const i of reihen) { const s = sp.inv[i]; if (s && s.id === stack.id && !ITEM[s.id].werkzeug && s.n < stapelMax(s.id)) { const m = Math.min(n, stapelMax(s.id) - s.n); s.n += m; n -= m; if (!n) break; } }
+  for (const i of reihen) { if (!n) break; if (!sp.inv[i]) { const m = Math.min(n, stapelMax(stack.id)); sp.inv[i] = { id: stack.id, n: m, dmg: stack.dmg || 0 }; n -= m; } }
+  hudInv();
+  return n;
+}
+function gehalten() { return sp.inv[sp.wahl]; }
+function verbrauchen(i, n = 1) { const s = sp.inv[i]; if (!s) return; s.n -= n; if (s.n <= 0) sp.inv[i] = null; hudInv(); }
+function abnutzen() {
+  const s = gehalten(); if (!s) return;
+  const w = ITEM[s.id].werkzeug; if (!w) return;
+  s.dmg = (s.dmg || 0) + 1;
+  if (s.dmg >= w.haltbar) { sp.inv[sp.wahl] = null; meldung(ITEM[s.id].name + ' ist kaputt'); rauschKlang(.2, 3000, .3, 'highpass'); }
+  hudInv();
+}
+
+// =====================================================================
+//  Zielen, Abbauen, Bauen
+// =====================================================================
+const blick = new THREE.Vector3();
+function augen() { return new THREE.Vector3(sp.x, sp.y + (sp.ducken ? 1.32 : 1.62), sp.z); }
+function strahl(o, d, weit) {
+  let x = Math.floor(o.x), y = Math.floor(o.y), z = Math.floor(o.z);
+  const sx = Math.sign(d.x), sy = Math.sign(d.y), sz = Math.sign(d.z);
+  const tdx = Math.abs(1 / d.x), tdy = Math.abs(1 / d.y), tdz = Math.abs(1 / d.z);
+  let tx = (sx > 0 ? x + 1 - o.x : o.x - x) * tdx, ty = (sy > 0 ? y + 1 - o.y : o.y - y) * tdy, tz = (sz > 0 ? z + 1 - o.z : o.z - z) * tdz;
+  let nx = 0, ny = 0, nz = 0, t = 0;
+  for (let i = 0; i < 64; i++) {
+    const id = welt.get(x, y, z);
+    if (id && id !== 10) return { x, y, z, nx, ny, nz, id, t };
+    if (tx < ty && tx < tz) { t = tx; if (t > weit) break; x += sx; tx += tdx; nx = -sx; ny = 0; nz = 0; }
+    else if (ty < tz) { t = ty; if (t > weit) break; y += sy; ty += tdy; nx = 0; ny = -sy; nz = 0; }
+    else { t = tz; if (t > weit) break; z += sz; tz += tdz; nx = 0; ny = 0; nz = -sz; }
+  }
+  return null;
+}
+function strahlBox(o, d, b) {
+  let tmin = 0, tmax = 1e9;
+  for (const a of ['x', 'y', 'z']) {
+    const inv = 1 / d[a]; let t0 = (b.min[a] - o[a]) * inv, t1 = (b.max[a] - o[a]) * inv;
+    if (t0 > t1) [t0, t1] = [t1, t0];
+    tmin = Math.max(tmin, t0); tmax = Math.min(tmax, t1); if (tmax < tmin) return -1;
+  }
+  return tmin;
+}
+let ziel = null;
+function zielen() {
+  const o = augen(); blick.set(0, 0, -1).applyEuler(kamera.rotation);
+  const tr = strahl(o, blick, 5);
+  let mob = null, mt = tr ? tr.t : 4;
+  for (const w of WESEN) {
+    const b = { min: { x: w.x - w.typ.breite / 2, y: w.y, z: w.z - w.typ.breite / 2 }, max: { x: w.x + w.typ.breite / 2, y: w.y + w.typ.hoehe, z: w.z + w.typ.breite / 2 } };
+    const t = strahlBox(o, blick, b);
+    if (t >= 0 && t < mt) { mt = t; mob = w; }
+  }
+  ziel = mob ? { mob } : tr;
+  if (ziel && !ziel.mob) { rahmen.visible = true; rahmen.position.set(ziel.x + .5, ziel.y + .5, ziel.z + .5); }
+  else rahmen.visible = false;
+}
+let abbau = null;
+function abbauInfo(id) {
+  const bl = BLOCK[id], s = gehalten(), w = s && ITEM[s.id].werkzeug;
+  if (bl.haerte < 0) return { zeit: Infinity, drop: false };
+  const korrekt = w && w.art === bl.werkzeug;
+  const drop = !bl.stufe || (korrekt && w.stufe >= bl.stufe);
+  let zeit = bl.haerte === 0 ? .05 : bl.haerte * (drop ? 1.5 : 5) / (korrekt ? w.speed : 1);
+  if (sp.kopfWasser) zeit *= 5;
+  if (!sp.amBoden && !sp.imWasser) zeit *= 2;
+  return { zeit, drop };
+}
+function abbauSchritt(dt) {
+  if (!abbauHalten || !ziel || ziel.mob || inventarOffen || sp.tot) { abbau = null; riss.visible = false; return; }
+  if (!abbau || abbau.x !== ziel.x || abbau.y !== ziel.y || abbau.z !== ziel.z) abbau = { x: ziel.x, y: ziel.y, z: ziel.z, f: 0, klang: 0 };
+  const id = welt.get(abbau.x, abbau.y, abbau.z), info = abbauInfo(id);
+  abbau.f += dt / info.zeit; schwung = Math.max(schwung, .6);
+  abbau.klang -= dt; if (abbau.klang <= 0) { abbau.klang = .25; KLANG.abbau(id); }
+  if (abbau.f >= 1) { blockAbbauen(abbau.x, abbau.y, abbau.z, info.drop); abbau = null; riss.visible = false; return; }
+  riss.visible = true; riss.position.set(abbau.x + .5, abbau.y + .5, abbau.z + .5);
+  riss.material.map = rissTex[Math.min(9, Math.floor(abbau.f * 10))];
+}
+function blockAbbauen(x, y, z, drop) {
+  const id = welt.get(x, y, z), bl = BLOCK[id];
+  const k = x + ',' + y + ',' + z;
+  welt.set(x, y, z, 0);
+  sofortNeu(x, z);
+  KLANG.abbau(id);
+  if (!FARBCACHE.has(id)) FARBCACHE.set(id, tileFarbe(bl.tex[2]));
+  partikel(x + .5, y + .5, z + .5, FARBCACHE.get(id), 8, 3);
+  if (bl.haerte > 0) abnutzen();
+  sp.erschoepf += .005;
+  if (drop) {
+    if (id === 8) { if (Math.random() < .06) gegenstandWerfen(26, 1, x + .5, y + .5, z + .5); if (Math.random() < .025) gegenstandWerfen(105, 1, x + .5, y + .5, z + .5); }
+    else if (bl.drop > 0) gegenstandWerfen(bl.drop, 1, x + .5, y + .5, z + .5);
+  }
+  // Inhalte von Truhe/Ofen fallen raus
+  if (TRUHEN.has(k)) { for (const s of TRUHEN.get(k)) if (s) gegenstandWerfen(s.id, s.n, x + .5, y + .5, z + .5, s.dmg); TRUHEN.delete(k); }
+  if (OEFEN.has(k)) { const o = OEFEN.get(k); for (const s of [o.ein, o.brenn, o.aus]) if (s) gegenstandWerfen(s.id, s.n, x + .5, y + .5, z + .5); OEFEN.delete(k); }
+  // Pflanzen/Fackel obendrauf fallen ab
+  const oben = welt.get(x, y + 1, z);
+  if (BLOCK[oben].form === 'kreuz' || BLOCK[oben].form === 'fackel') blockAbbauen(x, y + 1, z, true);
+}
+function richtungZu(px, pz) {
+  const dx = sp.x - px, dz = sp.z - pz;
+  return Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 0 : 1) : (dz > 0 ? 2 : 3);
+}
+function benutzen() {
+  if (sp.tot || inventarOffen) return;
+  zielen();
+  if (ziel && !ziel.mob) {
+    const id = ziel.id, k = ziel.x + ',' + ziel.y + ',' + ziel.z;
+    if (!sp.ducken || !gehalten()) {
+      if (id === 16) { inventarOeffnen('werkbank'); return; }
+      if (id === 17 || id === 30) { inventarOeffnen('ofen', k); return; }
+      if (id === 24) { inventarOeffnen('truhe', k); return; }
+      if (id === 29) { schlafen(ziel); return; }
+    }
+  }
+  const s = gehalten(); if (!s) return;
+  const it = ITEM[s.id];
+  if (it.nahrung) { if (sp.hunger < 20 || it.heilt) sp.essenT = .0001; return; }
+  if (!it.block || !ziel || ziel.mob) return;
+  const px = ziel.x + ziel.nx, py = ziel.y + ziel.ny, pz = ziel.z + ziel.nz;
+  const vorher = welt.get(px, py, pz);
+  if (!(vorher === 0 || vorher === 10 || vorher === 23)) return;
+  const bl = BLOCK[s.id];
+  if (bl.solid && kollidiert(sp.x, sp.y, sp.z, BREITE, HOEHE) === false) {
+    // prüfen, ob der neue Block den Spieler schneiden würde
+    const bx0 = px, bx1 = px + 1, by0 = py, by1 = py + 1, bz0 = pz, bz1 = pz + 1;
+    if (sp.x + BREITE > bx0 && sp.x - BREITE < bx1 && sp.y + HOEHE > by0 && sp.y < by1 && sp.z + BREITE > bz0 && sp.z - BREITE < bz1) return;
+    for (const w of WESEN) if (w.x + w.typ.breite / 2 > bx0 && w.x - w.typ.breite / 2 < bx1 && w.y + w.typ.hoehe > by0 && w.y < by1 && w.z + w.typ.breite / 2 > bz0 && w.z - w.typ.breite / 2 < bz1) return;
+  }
+  const unten = welt.get(px, py - 1, pz);
+  if (bl.form === 'kreuz' && !(unten === 1 || unten === 2)) return;
+  if (bl.form === 'fackel' && !OPAK[unten] && !(ziel.ny === 0 && OPAK[ziel.id])) return;
+  const meta = bl.vorne >= 0 ? richtungZu(px + .5, pz + .5) : undefined;
+  if (welt.set(px, py, pz, s.id, meta)) {
+    if (s.id === 24) TRUHEN.set(px + ',' + py + ',' + pz, new Array(27).fill(null));
+    if (s.id === 26) SETZLINGE.set(px + ',' + py + ',' + pz, 90 + Math.random() * 120);
+    sofortNeu(px, pz); verbrauchen(sp.wahl); KLANG.setzen(); schwung = 1;
+  }
+}
+function angreifen() {
+  if (sp.tot || inventarOffen) return;
+  zielen();
+  schwung = 1;
+  if (!ziel || !ziel.mob || sp.angriffCd > 0) return;
+  const s = gehalten(), w = s && ITEM[s.id].werkzeug;
+  const dmg = w ? w.schaden : 1;
+  const w_ = ziel.mob;
+  w_.treffen(dmg, w_.x - sp.x, w_.z - sp.z);
+  sp.angriffCd = .45; sp.erschoepf += .1;
+  if (w) abnutzen();
+}
+
+// =====================================================================
+//  Gegenstände in der Welt
+// =====================================================================
+const DROPS = [];
+function gegenstandWerfen(id, n, x, y, z, dmg, vx, vy, vz) {
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTex(id), transparent: true }));
+  sprite.scale.set(.32, .32, 1); szene.add(sprite);
+  DROPS.push({ id, n, dmg: dmg || 0, x, y, z, vx: vx ?? (Math.random() - .5) * 2, vy: vy ?? 3, vz: vz ?? (Math.random() - .5) * 2, alter: 0, sprite });
+}
+function dropsUpdate(dt) {
+  for (let i = DROPS.length - 1; i >= 0; i--) {
+    const d = DROPS[i];
+    d.alter += dt; d.vy -= 18 * dt;
+    const e = { x: d.x, y: d.y, z: d.z };
+    if (achse(e, 1, d.vy * dt, .12, .25)) { d.vy = 0; d.vx *= .5; d.vz *= .5; }
+    achse(e, 0, d.vx * dt, .12, .25); achse(e, 2, d.vz * dt, .12, .25);
+    d.x = e.x; d.y = e.y; d.z = e.z; d.vx *= Math.pow(.3, dt); d.vz *= Math.pow(.3, dt);
+    if (welt.get(Math.floor(d.x), Math.floor(d.y + .1), Math.floor(d.z)) === 10) d.vy = Math.max(d.vy, 1);
+    d.sprite.position.set(d.x, d.y + .25 + Math.sin(d.alter * 3) * .06, d.z);
+    const f = lichtFaktor(d.x, d.y + .3, d.z); d.sprite.material.color.setRGB(f, f, f);
+    const ab = Math.hypot(d.x - sp.x, d.y - (sp.y + .9), d.z - sp.z);
+    if (d.alter > .6 && ab < 1.6 && !sp.tot) {
+      const rest = hinzufuegen({ id: d.id, n: d.n, dmg: d.dmg });
+      if (rest < d.n) KLANG.pop();
+      d.n = rest;
+    }
+    if (d.n <= 0 || d.alter > 300 || d.y < -30) { szene.remove(d.sprite); d.sprite.material.dispose(); DROPS.splice(i, 1); }
+  }
+}
+function lichtFaktor(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const s = welt.licht(xi, yi, zi, 's'), l = welt.licht(xi, yi, zi, 'l');
+  return Math.max(Math.pow(.82, 15 - s) * U.uTag.value, Math.pow(.82, 15 - l), .06);
+}
+
+// =====================================================================
+//  Wesen (eigene Kreaturen)
+// =====================================================================
+const WESEN = [];
+function box(gr, w, h, d, farbe, x, y, z, mats) {
+  const m = new THREE.MeshBasicMaterial({ color: farbe }); m.userData.basis = new THREE.Color(farbe);
+  mats.push(m);
+  const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); gr.add(me); return me;
+}
+function auge(gr, x, y, z, farbe, gr_) { const m = new THREE.Mesh(new THREE.BoxGeometry(gr_ || .08, gr_ || .08, .02), new THREE.MeshBasicMaterial({ color: farbe })); m.position.set(x, y, z); gr.add(m); return m; }
+const TYPEN_WESEN = {
+  moorgaenger: {
+    name: 'Moorgänger', hp: 20, breite: .6, hoehe: 1.9, speed: 2.4, schaden: 3, feindlich: true, brennt: true,
+    bauen(gr, mats) {
+      const beine = [box(gr, .22, .8, .22, '#2f3a26', -.13, .4, 0, mats), box(gr, .22, .8, .22, '#2f3a26', .13, .4, 0, mats)];
+      beine.forEach(b => { b.geometry.translate(0, -.4, 0); b.position.y = .8; });
+      box(gr, .55, .7, .32, '#465a30', 0, 1.15, 0, mats);
+      box(gr, .57, .2, .34, '#33421f', 0, .95, 0, mats);
+      const kopf = box(gr, .46, .44, .44, '#5d6b4b', 0, 1.72, 0, mats);
+      box(gr, .5, .12, .48, '#2e3b1f', 0, 1.92, 0, mats);
+      for (const [x, l] of [[-.18, .5], [.05, .35], [.2, .45]]) box(gr, .05, l, .05, '#3d5a25', x, 1.6 - l / 2, -.2, mats);
+      auge(gr, -.1, 1.74, -.225, '#ffe14d'); auge(gr, .1, 1.74, -.225, '#ffe14d');
+      const arme = [box(gr, .17, .72, .17, '#3e5229', -.36, 1.05, 0, mats), box(gr, .17, .72, .17, '#3e5229', .36, 1.05, 0, mats)];
+      arme.forEach(a => { a.geometry.translate(0, -.32, 0); a.position.y = 1.45; });
+      return { beine, arme, kopf };
+    },
+    drops() { const d = []; if (Math.random() < .5) d.push([101, 1]); if (Math.random() < .08) d.push([102, 1]); return d; }
+  },
+  spinne: {
+    name: 'Höhlenspinne', hp: 14, breite: 1.2, hoehe: .8, speed: 3.3, schaden: 2, feindlich: true, klettert: true,
+    bauen(gr, mats) {
+      box(gr, .75, .5, .9, '#2a2230', 0, .45, .35, mats);
+      box(gr, .5, .4, .45, '#3a2f42', 0, .45, -.3, mats);
+      for (const x of [-.12, -.04, .04, .12]) auge(gr, x, .52, -.53, '#ff3030', .05);
+      const beine = [];
+      for (let i = 0; i < 4; i++) for (const s of [-1, 1]) {
+        const b = box(gr, .9, .07, .07, '#1e1824', s * .5, .45, -.25 + i * .2, mats);
+        b.geometry.translate(s * .45, 0, 0); b.position.x = s * .15; b.rotation.z = s * -.35; beine.push(b);
+      }
+      return { beine, arme: [], spinne: true };
+    },
+    drops() { return Math.random() < .7 ? [[108, 1 + Math.floor(Math.random() * 2)]] : []; }
+  },
+  moosbock: {
+    name: 'Moosbock', hp: 8, breite: .9, hoehe: 1.3, speed: 1.3, feindlich: false,
+    bauen(gr, mats) {
+      const beine = [];
+      for (const [x, z] of [[-.25, -.35], [.25, -.35], [-.25, .35], [.25, .35]]) { const b = box(gr, .16, .55, .16, '#3b3226', x, .55, z, mats); b.geometry.translate(0, -.275, 0); beine.push(b); }
+      box(gr, .7, .55, 1.0, '#cfc7b2', 0, .8, 0, mats);
+      box(gr, .6, .12, .8, '#6b8a46', 0, 1.1, .05, mats);
+      const kopf = box(gr, .38, .4, .42, '#b9b19b', 0, 1.05, -.62, mats);
+      box(gr, .08, .3, .08, '#8c7a5a', -.16, 1.35, -.55, mats).rotation.x = .5;
+      box(gr, .08, .3, .08, '#8c7a5a', .16, 1.35, -.55, mats).rotation.x = .5;
+      auge(gr, -.12, 1.1, -.835, '#1a1a1a', .06); auge(gr, .12, 1.1, -.835, '#1a1a1a', .06);
+      return { beine, arme: [], kopf };
+    },
+    drops() { return [[106, 1 + Math.floor(Math.random() * 2)], [28, 1]]; }
+  },
+  wildschwein: {
+    name: 'Wildschwein', hp: 10, breite: .9, hoehe: 1.0, speed: 1.5, feindlich: false,
+    bauen(gr, mats) {
+      const beine = [];
+      for (const [x, z] of [[-.22, -.32], [.22, -.32], [-.22, .32], [.22, .32]]) { const b = box(gr, .16, .4, .16, '#2e2219', x, .4, z, mats); b.geometry.translate(0, -.2, 0); beine.push(b); }
+      box(gr, .62, .55, 1.05, '#5a4130', 0, .65, 0, mats);
+      box(gr, .12, .14, .9, '#3a2a1e', 0, .98, .02, mats);
+      const kopf = box(gr, .42, .4, .4, '#4e3828', 0, .7, -.68, mats);
+      box(gr, .26, .2, .14, '#7a5a48', 0, .62, -.93, mats);
+      box(gr, .04, .14, .04, '#f2eadc', -.14, .58, -.95, mats); box(gr, .04, .14, .04, '#f2eadc', .14, .58, -.95, mats);
+      auge(gr, -.13, .8, -.885, '#111', .06); auge(gr, .13, .8, -.885, '#111', .06);
+      return { beine, arme: [], kopf };
+    },
+    drops() { return [[106, 1 + Math.floor(Math.random() * 2)], ...(Math.random() < .6 ? [[109, 1]] : [])]; }
+  }
+};
+class Wesen {
+  constructor(typName, x, y, z) {
+    this.typ = TYPEN_WESEN[typName]; this.typName = typName;
+    this.x = x; this.y = y; this.z = z; this.vx = 0; this.vy = 0; this.vz = 0; this.yaw = Math.random() * 6.28;
+    this.hp = this.typ.hp; this.amBoden = false; this.wanderT = 0; this.zielYaw = this.yaw; this.laufen = false;
+    this.cd = 0; this.verletztT = 0; this.flieheT = 0; this.brennT = 0; this.anim = 0; this.geraeuschT = 5 + Math.random() * 10;
+    this.gr = new THREE.Group(); this.mats = [];
+    this.teile = this.typ.bauen(this.gr, this.mats);
+    szene.add(this.gr);
+  }
+  treffen(dmg, dx, dz) {
+    if (this.verletztT > .35) return;
+    this.hp -= dmg; this.verletztT = .5;
+    const l = Math.hypot(dx, dz) || 1;
+    this.vx = dx / l * 6; this.vz = dz / l * 6; this.vy = 5;
+    KLANG.hau();
+    if (!this.typ.feindlich) this.flieheT = 5;
+    if (this.hp <= 0) this.sterben();
+  }
+  sterben() {
+    this.tot = true;
+    for (const [id, n] of this.typ.drops()) gegenstandWerfen(id, n, this.x, this.y + .5, this.z);
+    partikel(this.x, this.y + .5, this.z, new THREE.Color('#ddd'), 10, 2);
+  }
+  entfernen() { szene.remove(this.gr); for (const m of this.mats) m.dispose(); this.gr.traverse(o => o.geometry && o.geometry.dispose()); }
+  update(dt) {
+    const T_ = this.typ;
+    this.cd -= dt; this.verletztT -= dt; this.flieheT -= dt; this.geraeuschT -= dt;
+    const dxp = sp.x - this.x, dzp = sp.z - this.z, abst = Math.hypot(dxp, dzp);
+    let speed = 0;
+    if (T_.feindlich && !sp.tot && abst < 22 && Math.abs(sp.y - this.y) < 10) {
+      this.zielYaw = Math.atan2(-dxp, -dzp); speed = T_.speed;
+      if (abst < (T_.breite / 2 + 1.0) && Math.abs(sp.y + .9 - (this.y + T_.hoehe / 2)) < 1.6 && this.cd <= 0) {
+        this.cd = 1.1; spielerTreffen(T_.schaden, T_.name, this.x, this.z);
+      }
+      if (abst < .7) speed = 0;
+    } else if (this.flieheT > 0) {
+      this.zielYaw = Math.atan2(dxp, dzp); speed = T_.speed * 2.2;
+    } else {
+      this.wanderT -= dt;
+      if (this.wanderT <= 0) { this.wanderT = 2 + Math.random() * 5; this.laufen = Math.random() < .55; this.zielYaw = Math.random() * 6.28; }
+      speed = this.laufen ? T_.speed * .6 : 0;
+    }
+    let d = this.zielYaw - this.yaw; while (d > Math.PI) d -= 6.28; while (d < -Math.PI) d += 6.28;
+    this.yaw += d * Math.min(1, dt * 6);
+    const tx = -Math.sin(this.yaw) * speed, tz = -Math.cos(this.yaw) * speed;
+    const k = this.amBoden ? 10 : 2;
+    if (this.verletztT < .2) { this.vx += (tx - this.vx) * Math.min(1, dt * k); this.vz += (tz - this.vz) * Math.min(1, dt * k); }
+    const nass = welt.get(Math.floor(this.x), Math.floor(this.y + .3), Math.floor(this.z)) === 10;
+    if (nass) { this.vy += 14 * dt; this.vy = Math.min(this.vy, 2); this.vy *= Math.pow(.3, dt); }
+    this.vy -= 28 * dt;
+    const hw = T_.breite / 2, h = T_.hoehe;
+    const yAlt = this.y;
+    if (achse(this, 1, this.vy * dt, hw, h)) { if (this.vy < 0) { this.amBoden = true; const fall = (this.fallY || this.y) - this.y; if (fall > 3.5) this.treffen(Math.floor(fall - 3), 0, 0); this.fallY = this.y; } this.vy = 0; } else { this.amBoden = false; this.fallY = Math.max(this.fallY || this.y, this.y); }
+    const bx = achse(this, 0, this.vx * dt, hw, h), bz = achse(this, 2, this.vz * dt, hw, h);
+    if ((bx || bz) && speed > 0) {
+      if (T_.klettert) this.vy = 3;
+      else if (this.amBoden && !kollidiert(this.x - Math.sin(this.yaw) * .4, this.y + 1.05, this.z - Math.cos(this.yaw) * .4, hw, h)) this.vy = 8.2;
+      else if (!T_.feindlich) this.zielYaw += 1.5;
+    }
+    if (this.amBoden) this.fallY = this.y;
+    // Licht & Sonne
+    const f = lichtFaktor(this.x, this.y + h * .7, this.z);
+    const himmel = welt.licht(Math.floor(this.x), Math.floor(this.y + h * .8), Math.floor(this.z), 's');
+    if (T_.brennt && U.uTag.value > .65 && himmel >= 13 && !nass) {
+      this.brennT -= dt;
+      if (this.brennT <= 0) { this.brennT = 1; this.hp -= 2; partikel(this.x, this.y + h, this.z, new THREE.Color('#ff8a2a'), 3, 1); if (this.hp <= 0) this.sterben(); }
+    }
+    const rot = this.verletztT > 0 ? .6 : 0;
+    for (const m of this.mats) { m.color.copy(m.userData.basis).multiplyScalar(f); if (rot) m.color.lerp(new THREE.Color(1, .2, .2), rot); }
+    // Animation
+    const v = Math.hypot(this.vx, this.vz); this.anim += v * dt * 3.2;
+    const sw = Math.sin(this.anim) * Math.min(.7, v * .35);
+    if (this.teile.spinne) this.teile.beine.forEach((b, i) => { b.rotation.y = Math.sin(this.anim + i) * .3; });
+    else {
+      this.teile.beine.forEach((b, i) => b.rotation.x = (i % 2 ? sw : -sw) * (i > 1 ? -1 : 1));
+      this.teile.arme.forEach((a, i) => a.rotation.x = (i ? sw : -sw) * .8);
+    }
+    this.gr.position.set(this.x, this.y, this.z); this.gr.rotation.y = this.yaw;
+    if (this.geraeuschT <= 0 && abst < 16) { this.geraeuschT = 6 + Math.random() * 12; (T_.feindlich ? KLANG.monster : KLANG.tier)(); }
+  }
+}
+function wesenSpawn(dt) {
+  wesenSpawn.t = (wesenSpawn.t || 0) - dt;
+  if (wesenSpawn.t > 0) return; wesenSpawn.t = 1.2;
+  let feinde = 0, tiere = 0;
+  for (const w of WESEN) { if (w.typ.feindlich) feinde++; else tiere++; }
+  const versuch = (feindlich) => {
+    const a = Math.random() * 6.28, r = feindlich ? 20 + Math.random() * 22 : 22 + Math.random() * 26;
+    const x = Math.floor(sp.x + Math.cos(a) * r), z = Math.floor(sp.z + Math.sin(a) * r);
+    if (!welt.chunk(x >> 4, z >> 4)) return;
+    for (let y = Math.min(CH - 3, Math.floor(sp.y) + 16); y > Math.max(2, sp.y - 30); y--) {
+      const id = welt.get(x, y, z);
+      if (!SOLID[id] || welt.get(x, y + 1, z) || welt.get(x, y + 2, z)) continue;
+      const s = welt.licht(x, y + 1, z, 's'), l = welt.licht(x, y + 1, z, 'l');
+      const hell = Math.max(Math.round(s * U.uTag.value), l);
+      if (feindlich) {
+        if (hell > 6) return;
+        WESEN.push(new Wesen(Math.random() < .7 ? 'moorgaenger' : 'spinne', x + .5, y + 1, z + .5));
+      } else {
+        if (id !== 1 || s < 12) return;
+        const typ = Math.random() < .55 ? 'moosbock' : 'wildschwein', n = 2 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < n; i++) WESEN.push(new Wesen(typ, x + .5 + (Math.random() - .5) * 2, y + 1, z + .5 + (Math.random() - .5) * 2));
+      }
+      return;
+    }
+  };
+  if (feinde < 12) versuch(true);
+  if (tiere < 10 && Math.random() < .35) versuch(false);
+}
+function wesenUpdate(dt) {
+  for (let i = WESEN.length - 1; i >= 0; i--) {
+    const w = WESEN[i];
+    const ab = Math.hypot(w.x - sp.x, w.z - sp.z);
+    if (!w.tot && welt.chunk(Math.floor(w.x) >> 4, Math.floor(w.z) >> 4)) w.update(dt);
+    if (w.tot || ab > (w.typ.feindlich ? 80 : 110) || w.y < -20) { w.entfernen(); WESEN.splice(i, 1); }
+  }
+}
+
+// =====================================================================
+//  Überleben
+// =====================================================================
+function spielerTreffen(dmg, wer, qx, qz) {
+  if (sp.schutzT > 0 || sp.tot) return;
+  schaden(dmg, wer);
+  const dx = sp.x - qx, dz = sp.z - qz, l = Math.hypot(dx, dz) || 1;
+  sp.vx += dx / l * 7; sp.vz += dz / l * 7; sp.vy = 5;
+}
+let todesGrund = '';
+function schaden(n, grund) {
+  if (sp.tot || n <= 0) return;
+  sp.hp -= n; sp.schutzT = .5; KLANG.au();
+  $('rot').style.opacity = .55; setTimeout(() => $('rot').style.opacity = 0, 160);
+  if (sp.hp <= 0) { sp.hp = 0; sterben(grund); }
+  hudWerte();
+}
+function sterben(grund) {
+  sp.tot = true; todesGrund = grund;
+  for (let i = 0; i < 36; i++) { const s = sp.inv[i]; if (s) { gegenstandWerfen(s.id, s.n, sp.x, sp.y + 1, sp.z, s.dmg, (Math.random() - .5) * 5, 4, (Math.random() - .5) * 5); sp.inv[i] = null; } }
+  hudInv();
+  if (document.pointerLockElement) document.exitPointerLock();
+  $('todGrund').textContent = grund === 'Fallschaden' ? 'Du bist zu tief gefallen.' : grund === 'ertrunken' ? 'Du bist ertrunken.' : grund === 'verhungert' ? 'Du bist verhungert.' : grund === 'ins Nichts gefallen' ? 'Du bist ins Nichts gefallen.' : grund === 'Kaktus' ? 'Du hast einen Kaktus umarmt.' : 'Du wurdest von ' + (grund === 'Höhlenspinne' ? 'einer ' : 'einem ') + grund + ' erwischt.';
+  $('tod').hidden = false; $('touch').hidden = true;
+}
+function wiederbeleben() {
+  const s = sp.spawn || weltSpawn;
+  Object.assign(sp, { x: s.x, y: s.y, z: s.z, vx: 0, vy: 0, vz: 0, hp: 20, hunger: 20, saett: 5, erschoepf: 0, luft: 10, tot: false, maxY: s.y });
+  $('tod').hidden = true; $('touch').hidden = !istTouch;
+  hudWerte(); sperren();
+}
+function ueberleben(dt) {
+  if (sp.tot) return;
+  sp.schutzT -= dt; sp.angriffCd -= dt;
+  while (sp.erschoepf >= 4) { sp.erschoepf -= 4; if (sp.saett > 0) sp.saett = Math.max(0, sp.saett - 1); else sp.hunger = Math.max(0, sp.hunger - 1); }
+  if (sp.hunger >= 18 && sp.hp < 20) { sp.regenT += dt; if (sp.regenT >= 3) { sp.regenT = 0; sp.hp = Math.min(20, sp.hp + 1); sp.erschoepf += 3; } } else sp.regenT = 0;
+  if (sp.hunger <= 0) { sp.hungerT += dt; if (sp.hungerT >= 4) { sp.hungerT = 0; if (sp.hp > 1) schaden(1, 'verhungert'); } }
+  if (sp.kopfWasser) { sp.luftT += dt; if (sp.luftT >= 1.5) { sp.luftT = 0; if (sp.luft > 0) sp.luft--; else schaden(2, 'ertrunken'); } }
+  else { sp.luftT = 0; sp.luft = Math.min(10, sp.luft + dt * 4); }
+  // Essen
+  if (sp.essenT > 0) {
+    const s = gehalten();
+    if (!rechtsHalten || !s || !ITEM[s.id].nahrung) sp.essenT = 0;
+    else {
+      sp.essenT += dt; schwung = Math.max(schwung, .3 + Math.abs(Math.sin(sp.essenT * 14)) * .3);
+      if (Math.floor(sp.essenT * 5) !== Math.floor((sp.essenT - dt) * 5)) KLANG.essen();
+      if (sp.essenT >= 1.6) {
+        const it = ITEM[s.id];
+        sp.hunger = Math.min(20, sp.hunger + it.nahrung); sp.saett = Math.min(sp.hunger, sp.saett + it.saett);
+        if (it.heilt) sp.hp = Math.min(20, sp.hp + it.heilt);
+        verbrauchen(sp.wahl); sp.essenT = 0;
+      }
+    }
+  }
+}
+function schlafen(z) {
+  const nacht = U.uTag.value < .55;
+  if (!nacht) { meldung('Du kannst nur nachts schlafen. Spawnpunkt gesetzt.'); sp.spawn = { x: z.x + .5, y: z.y + 1, z: z.z + .5 }; return; }
+  if (WESEN.some(w => w.typ.feindlich && Math.hypot(w.x - sp.x, w.z - sp.z) < 10)) { meldung('Du kannst nicht schlafen – Monster in der Nähe!'); return; }
+  sp.spawn = { x: z.x + .5, y: z.y + 1, z: z.z + .5 };
+  $('schwarz').style.opacity = 1;
+  setTimeout(() => { zeit = Math.ceil(zeit / TAG) * TAG + TAG * .02; for (const w of WESEN) if (w.typ.feindlich) w.tot = true; $('schwarz').style.opacity = 0; meldung('Guten Morgen! Spawnpunkt gesetzt.'); }, 1200);
+}
+
+// =====================================================================
+//  Öfen & Truhen
+// =====================================================================
+const OEFEN = new Map(), TRUHEN = new Map(), SETZLINGE = new Map();
+function setzlingeUpdate(dt) {
+  for (const [k, t] of SETZLINGE) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (!welt.chunk(x >> 4, z >> 4)) continue;
+    if (welt.get(x, y, z) !== 26) { SETZLINGE.delete(k); continue; }
+    const rest = t - dt; SETZLINGE.set(k, rest);
+    if (rest > 0) continue;
+    let frei = true; for (let dy = 1; dy < 6; dy++) if (welt.get(x, y + dy, z)) frei = false;
+    if (!frei) { SETZLINGE.set(k, 30); continue; }
+    SETZLINGE.delete(k);
+    const th = 4 + Math.floor(Math.random() * 2);
+    for (let dy = th - 2; dy <= th + 1; dy++) { const r = dy >= th ? 1 : 2; for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) { if (r === 2 && Math.abs(dx) === 2 && Math.abs(dz) === 2 && Math.random() < .5) continue; if (dy === th + 1 && Math.abs(dx) + Math.abs(dz) > 1) continue; if (!welt.get(x + dx, y + dy, z + dz)) welt.set(x + dx, y + dy, z + dz, 8); } }
+    for (let dy = 0; dy < th; dy++) welt.set(x, y + dy, z, 7);
+    sofortNeu(x, z);
+  }
+}
+function ofen(k) { if (!OEFEN.has(k)) OEFEN.set(k, { ein: null, brenn: null, aus: null, rest: 0, max: 0, fort: 0 }); return OEFEN.get(k); }
+function oefenUpdate(dt) {
+  for (const [k, o] of OEFEN) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (!welt.chunk(x >> 4, z >> 4)) continue;
+    const erg = o.ein && SCHMELZEN[o.ein.id];
+    const passt = erg && (!o.aus || (o.aus.id === erg && o.aus.n < 64));
+    if (o.rest > 0) o.rest -= dt;
+    if (o.rest <= 0 && passt && o.brenn && BRENNWERT[o.brenn.id]) {
+      o.rest = o.max = BRENNWERT[o.brenn.id]; o.brenn.n--; if (!o.brenn.n) o.brenn = null;
+    }
+    if (o.rest > 0 && passt) {
+      o.fort += dt;
+      if (o.fort >= 8) { o.fort = 0; o.ein.n--; if (!o.ein.n) o.ein = null; if (o.aus) o.aus.n++; else o.aus = { id: erg, n: 1, dmg: 0 }; }
+    } else o.fort = Math.max(0, o.fort - dt * 2);
+    const an = o.rest > 0, id = welt.get(x, y, z);
+    if (an && id === 17) welt.set(x, y, z, 30, welt.meta.get(k)); else if (!an && id === 30) welt.set(x, y, z, 17, welt.meta.get(k));
+  }
+}
+
+// =====================================================================
+//  Inventar-Oberfläche
+// =====================================================================
+let inventarOffen = false, uiArt = null, uiKey = null, cursor = null;
+let gitter = new Array(9).fill(null), gitterN = 2;
+const ICON_URL = new Map();
+function iconURL(id) { if (!ICON_URL.has(id)) ICON_URL.set(id, icon(id).toDataURL()); return ICON_URL.get(id); }
+function slotHTML(s) {
+  if (!s) return '';
+  const w = ITEM[s.id].werkzeug;
+  let h = `<img src="${iconURL(s.id)}" draggable="false">`;
+  if (s.n > 1) h += `<b>${s.n}</b>`;
+  if (w && s.dmg) { const p = 1 - s.dmg / w.haltbar; h += `<i style="width:${Math.round(p * 80)}%;background:hsl(${p * 120},90%,45%)"></i>`; }
+  return h;
+}
+// Fächer: get/set für jeden Slot-Typ
+function fach(art, i) {
+  if (art === 'inv') return { get: () => sp.inv[i], set: v => sp.inv[i] = v };
+  if (art === 'gitter') return { get: () => gitter[i], set: v => gitter[i] = v };
+  if (art === 'truhe') { const t = TRUHEN.get(uiKey); return { get: () => t[i], set: v => t[i] = v }; }
+  if (art === 'ofen') { const o = ofen(uiKey), n = ['ein', 'brenn', 'aus'][i]; return { get: () => o[n], set: v => o[n] = v, nurNehmen: n === 'aus' }; }
+}
+function ergebnis() {
+  const r = rezeptFinden(gitter.slice(0, gitterN * gitterN).map(s => s ? s.id : 0), gitterN);
+  return r ? { id: r.ergebnis, n: r.anzahl, dmg: 0 } : null;
+}
+function slotKlick(art, i, rechts, shift) {
+  if (art === 'ergebnis') {
+    const e = ergebnis(); if (!e) return;
+    const einmal = () => {
+      const e2 = ergebnis(); if (!e2) return false;
+      if (shift) { const rest = hinzufuegen(e2); if (rest) { gegenstandWerfen(e2.id, rest, sp.x, sp.y + 1.2, sp.z); } }
+      else { if (cursor && (cursor.id !== e2.id || cursor.n + e2.n > stapelMax(e2.id) || ITEM[e2.id].werkzeug)) return false; if (cursor) cursor.n += e2.n; else cursor = e2; }
+      for (let k = 0; k < gitterN * gitterN; k++) if (gitter[k]) { gitter[k].n--; if (!gitter[k].n) gitter[k] = null; }
+      return true;
+    };
+    if (shift) { let n = 0; while (n < 64 && einmal()) n++; } else einmal();
+    KLANG.pop(); uiZeichnen(); return;
+  }
+  const f = fach(art, i); let s = f.get();
+  if (shift && s) {
+    // schnell verschieben
+    if (art === 'inv') {
+      if (uiArt === 'truhe') { const t = TRUHEN.get(uiKey); s = einlagern(t, s); }
+      else if (uiArt === 'ofen') { const o = ofen(uiKey); if (SCHMELZEN[s.id] && (!o.ein || o.ein.id === s.id)) { const m = o.ein ? Math.min(s.n, 64 - o.ein.n) : s.n; if (o.ein) o.ein.n += m; else o.ein = { id: s.id, n: m, dmg: 0 }; s.n -= m; } else if (BRENNWERT[s.id] && (!o.brenn || o.brenn.id === s.id)) { const m = o.brenn ? Math.min(s.n, 64 - o.brenn.n) : s.n; if (o.brenn) o.brenn.n += m; else o.brenn = { id: s.id, n: m, dmg: 0 }; s.n -= m; } }
+      else { const nach = i < 9 ? [...Array(27).keys()].map(k => k + 9) : [...Array(9).keys()]; const tmp = sp.inv; s = einlagern(tmp, s, nach); }
+      f.set(s && s.n > 0 ? s : null);
+    } else { const rest = hinzufuegen(s); f.set(rest ? { ...s, n: rest } : null); }
+    uiZeichnen(); return;
+  }
+  if (!cursor) {
+    if (!s) return;
+    if (rechts) { const h = Math.ceil(s.n / 2); cursor = { ...s, n: h }; s.n -= h; f.set(s.n ? s : null); }
+    else { cursor = s; f.set(null); }
+  } else {
+    if (f.nurNehmen) { if (s && s.id === cursor.id && cursor.n + s.n <= stapelMax(s.id)) { cursor.n += s.n; f.set(null); } uiZeichnen(); return; }
+    if (!s) { if (rechts) { f.set({ ...cursor, n: 1 }); cursor.n--; if (!cursor.n) cursor = null; } else { f.set(cursor); cursor = null; } }
+    else if (s.id === cursor.id && !ITEM[s.id].werkzeug) {
+      const max = stapelMax(s.id);
+      if (rechts) { if (s.n < max) { s.n++; cursor.n--; if (!cursor.n) cursor = null; } }
+      else { const m = Math.min(cursor.n, max - s.n); s.n += m; cursor.n -= m; if (!cursor.n) cursor = null; }
+    } else { f.set(cursor); cursor = s; }
+  }
+  uiZeichnen();
+}
+function einlagern(ziel, s, reihen) {
+  reihen = reihen || [...ziel.keys()];
+  for (const k of reihen) { const t = ziel[k]; if (t && t.id === s.id && !ITEM[s.id].werkzeug && t.n < stapelMax(s.id)) { const m = Math.min(s.n, stapelMax(s.id) - t.n); t.n += m; s.n -= m; if (!s.n) return null; } }
+  for (const k of reihen) { if (!ziel[k]) { ziel[k] = { ...s }; return null; } }
+  return s;
+}
+function slotEl(art, i, extra) {
+  const d = document.createElement('div'); d.className = 'slot' + (extra ? ' ' + extra : ''); d.dataset.art = art; d.dataset.i = i;
+  return d;
+}
+function inventarOeffnen(art, key) {
+  if (sp.tot) return;
+  uiArt = art || 'inventar'; uiKey = key || null; inventarOffen = true;
+  gitterN = uiArt === 'werkbank' ? 3 : 2;
+  gitter = new Array(9).fill(null);
+  if (uiArt === 'truhe' && !TRUHEN.has(uiKey)) TRUHEN.set(uiKey, new Array(27).fill(null));
+  abbauHalten = false; rechtsHalten = false;
+  if (document.pointerLockElement) document.exitPointerLock();
+  const oben = $('invOben'); oben.innerHTML = '';
+  const titel = document.createElement('div'); titel.className = 'invTitel';
+  titel.textContent = { inventar: 'Inventar', werkbank: 'Werkbank', ofen: 'Ofen', truhe: 'Truhe' }[uiArt]; oben.append(titel);
+  if (uiArt === 'inventar' || uiArt === 'werkbank') {
+    const reihe = document.createElement('div'); reihe.className = 'craftReihe';
+    const g = document.createElement('div'); g.className = 'raster'; g.style.gridTemplateColumns = `repeat(${gitterN}, var(--slot))`;
+    for (let i = 0; i < gitterN * gitterN; i++) g.append(slotEl('gitter', i));
+    const pfeil = document.createElement('div'); pfeil.className = 'pfeil'; pfeil.textContent = '➜';
+    reihe.append(g, pfeil, slotEl('ergebnis', 0, 'gross'));
+    oben.append(reihe);
+  } else if (uiArt === 'ofen') {
+    const reihe = document.createElement('div'); reihe.className = 'craftReihe';
+    const sp_ = document.createElement('div'); sp_.className = 'ofenSpalte';
+    sp_.append(slotEl('ofen', 0), Object.assign(document.createElement('div'), { className: 'flamme', id: 'flamme' }), slotEl('ofen', 1));
+    const pfeil = document.createElement('div'); pfeil.className = 'pfeil'; pfeil.id = 'ofenPfeil'; pfeil.innerHTML = '<span>➜</span><i></i>';
+    reihe.append(sp_, pfeil, slotEl('ofen', 2, 'gross'));
+    oben.append(reihe);
+    const h = document.createElement('div'); h.className = 'invHinweis'; h.textContent = 'Oben: was geschmolzen werden soll · Unten: Brennstoff (Kohle, Holz)'; oben.append(h);
+  } else if (uiArt === 'truhe') {
+    const g = document.createElement('div'); g.className = 'raster'; g.style.gridTemplateColumns = 'repeat(9, var(--slot))';
+    for (let i = 0; i < 27; i++) g.append(slotEl('truhe', i));
+    oben.append(g);
+  }
+  $('inv').hidden = false; $('touch').hidden = true;
+  uiZeichnen();
+}
+function inventarSchliessen() {
+  for (let i = 0; i < 9; i++) if (gitter[i]) { const r = hinzufuegen(gitter[i]); if (r) gegenstandWerfen(gitter[i].id, r, sp.x, sp.y + 1.2, sp.z); gitter[i] = null; }
+  if (cursor) { const r = hinzufuegen(cursor); if (r) gegenstandWerfen(cursor.id, r, sp.x, sp.y + 1.2, sp.z); cursor = null; }
+  inventarOffen = false; $('inv').hidden = true; $('cursorItem').hidden = true; $('touch').hidden = !istTouch;
+  hudInv(); sperren();
+}
+function uiZeichnen() {
+  document.querySelectorAll('#inv .slot').forEach(d => {
+    const art = d.dataset.art, i = +d.dataset.i;
+    const s = art === 'ergebnis' ? ergebnis() : fach(art, i).get();
+    d.innerHTML = slotHTML(s);
+  });
+  const c = $('cursorItem'); c.innerHTML = slotHTML(cursor); c.hidden = !cursor;
+  if (uiArt === 'ofen') ofenAnzeige();
+  hudInv();
+}
+function ofenAnzeige() {
+  const o = ofen(uiKey), fl = $('flamme'), pf = $('ofenPfeil'); if (!fl) return;
+  fl.style.setProperty('--h', (o.max ? Math.max(0, o.rest / o.max) * 100 : 0) + '%');
+  pf.querySelector('i').style.width = (o.fort / 8 * 100) + '%';
+}
+function invAufbauen() {
+  const h = $('invHaupt'), l = $('invLeiste');
+  for (let i = 9; i < 36; i++) h.append(slotEl('inv', i));
+  for (let i = 0; i < 9; i++) l.append(slotEl('inv', i));
+  let langT = null, langAusgeloest = false;
+  $('inv').addEventListener('pointerdown', e => {
+    const d = e.target.closest('.slot'); if (!d) return;
+    e.preventDefault();
+    if (e.pointerType === 'touch') {
+      langAusgeloest = false;
+      langT = setTimeout(() => { langAusgeloest = true; slotKlick(d.dataset.art, +d.dataset.i, true, false); }, 380);
+      d.dataset.touch = '1';
+      return;
+    }
+    slotKlick(d.dataset.art, +d.dataset.i, e.button === 2, e.shiftKey);
+  });
+  $('inv').addEventListener('pointerup', e => {
+    const d = e.target.closest('.slot'); clearTimeout(langT);
+    if (d && d.dataset.touch && !langAusgeloest) slotKlick(d.dataset.art, +d.dataset.i, false, false);
+    if (d) delete d.dataset.touch;
+  });
+  $('inv').addEventListener('contextmenu', e => e.preventDefault());
+  addEventListener('pointermove', e => { const c = $('cursorItem'); c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px'; });
+  $('invZu').onclick = inventarSchliessen;
+  $('inv').addEventListener('pointerdown', e => { if (e.target.id === 'inv') inventarSchliessen(); });
+}
+
+// =====================================================================
+//  HUD
+// =====================================================================
+const HERZ = (art) => `<svg viewBox="0 0 9 9"><path d="M4.5 8 1 4.5C0 3.5 0 1.8 1.2 1.1c1-.6 2.3-.2 3.3 1 1-1.2 2.3-1.6 3.3-1 1.2.7 1.2 2.4.2 3.4z" fill="${art === 2 ? '#e3262e' : '#3a1214'}" stroke="#120607" stroke-width=".7"/>${art === 1 ? '<path d="M4.5 2.1V8L1 4.5C0 3.5 0 1.8 1.2 1.1c1-.6 2.3-.2 3.3 1z" fill="#e3262e"/>' : ''}</svg>`;
+const BROT = (art) => `<svg viewBox="0 0 9 9"><path d="M1 6.2C.6 4 2 2 4.5 2S8.4 4 8 6.2c-.1.6-.6 1-1.2 1H2.2C1.6 7.2 1.1 6.8 1 6.2z" fill="${art === 2 ? '#c98a3f' : '#3d2a14'}" stroke="#1b1006" stroke-width=".7"/>${art === 1 ? '<path d="M4.5 2C2 2 .6 4 1 6.2c.1.6.6 1 1.2 1h2.3z" fill="#c98a3f"/>' : ''}<path d="M3 3.6l.6 1M4.6 3.3l.5 1M6.1 3.7l.5 1" stroke="${art ? '#8a5a24' : '#1b1006'}" stroke-width=".5"/></svg>`;
+const BLASE = `<svg viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3.4" fill="#5bb5ff" stroke="#0d2d55" stroke-width=".8"/><circle cx="3.3" cy="3.3" r=".9" fill="#fff"/></svg>`;
+let hudCache = '';
+function hudWerte() {
+  const hp = Math.max(0, Math.ceil(sp.hp)), hu = Math.ceil(sp.hunger), lu = Math.ceil(sp.luft);
+  const key = hp + '|' + hu + '|' + (sp.kopfWasser || lu < 10 ? lu : -1);
+  if (key === hudCache) return; hudCache = key;
+  let h = ''; for (let i = 0; i < 10; i++) h += HERZ(hp >= (i + 1) * 2 ? 2 : hp === i * 2 + 1 ? 1 : 0); $('herzen').innerHTML = h;
+  let f = ''; for (let i = 9; i >= 0; i--) f += BROT(hu >= (i + 1) * 2 ? 2 : hu === i * 2 + 1 ? 1 : 0); $('hunger').innerHTML = f;
+  $('luft').innerHTML = (sp.kopfWasser || lu < 10) ? BLASE.repeat(Math.max(0, lu)) : '';
+  $('herzen').classList.toggle('wenig', hp <= 4);
+}
+function hudInv() {
+  const l = $('hotbar');
+  if (!l.children.length) for (let i = 0; i < 9; i++) { const d = document.createElement('div'); d.className = 'slot'; d.dataset.i = i; l.append(d); }
+  for (let i = 0; i < 9; i++) { const d = l.children[i]; d.innerHTML = slotHTML(sp.inv[i]); d.classList.toggle('aktiv', i === sp.wahl); }
+  const s = gehalten();
+  if (s) { handItem.visible = true; handItem.material.map = iconTex(s.id); handItem.material.needsUpdate = true; handArm.visible = false; }
+  else { handItem.visible = false; handArm.visible = true; }
+  if (s) { $('itemName').textContent = ITEM[s.id].name; $('itemName').classList.add('an'); clearTimeout(hudInv.t); hudInv.t = setTimeout(() => $('itemName').classList.remove('an'), 1500); }
+}
+function waehle(i) { if (i !== sp.wahl) { sp.wahl = (i + 9) % 9; sp.essenT = 0; abbau = null; hudInv(); } }
+let meldT = null;
+function meldung(t) { const m = $('meldung'); m.textContent = t; m.classList.add('an'); clearTimeout(meldT); meldT = setTimeout(() => m.classList.remove('an'), 2600); }
+
+// =====================================================================
+//  Tageszeit
+// =====================================================================
+const TAG = 840;
+let zeit = TAG * .27;
+const C_TAG = new THREE.Color('#8fc2f5'), C_NACHT = new THREE.Color('#070b18'), C_ABEND = new THREE.Color('#e9925a'), C_WASSER = new THREE.Color('#1d3f8c');
+function tageszeit(dt) {
+  zeit += dt;
+  const p = (zeit % TAG) / TAG, w = p * Math.PI * 2;
+  const hoehe = Math.sin(w);
+  const tag = smooth(-.18, .22, hoehe);
+  U.uTag.value = .21 + .79 * tag;
+  const himmel = C_NACHT.clone().lerp(C_TAG, tag);
+  const abend = Math.max(0, 1 - Math.abs(hoehe) * 4) * .55; himmel.lerp(C_ABEND, abend * (Math.cos(w) > 0 ? 1 : .8));
+  if (sp.kopfWasser) { szene.background = C_WASSER; U.uNebel.value.copy(C_WASSER); U.uNebelNah.value = 2; U.uNebelFern.value = 18; }
+  else { szene.background = himmel; U.uNebel.value.copy(himmel); U.uNebelNah.value = sichtweite * CW * .55; U.uNebelFern.value = sichtweite * CW * .95; }
+  const k = kamera.position;
+  sonne.position.set(k.x + Math.cos(w) * 300, k.y + hoehe * 300, k.z + 60);
+  mond.position.set(k.x - Math.cos(w) * 300, k.y - hoehe * 300, k.z - 60);
+  sterne.position.copy(k); sterne.material.opacity = 1 - tag; sterne.rotation.z = w;
+  wolken.position.x = k.x; wolken.position.z = k.z;
+  wolkenTex.offset.set((k.x / 1600 * 4 + zeit * .0008) % 1, (-k.z / 1600 * 4) % 1);
+  wolken.material.color.setScalar(.3 + .7 * tag);
+}
+
+// =====================================================================
+//  Speichern & Laden
+// =====================================================================
+const SPEICHER = 'blockheimWelt';
+let weltSpawn = { x: .5, y: 80, z: .5 };
+function speichern() {
+  if (!welt || sp.tot) return;
+  try {
+    const aend = {}; for (const [k, m] of welt.aend) { const a = []; for (const [p, id] of m) a.push(p, id); aend[k] = a; }
+    const daten = {
+      v: 1, seed: welt.seed, zeit, sichtweite,
+      sp: { x: sp.x, y: sp.y, z: sp.z, yaw: sp.yaw, pitch: sp.pitch, hp: sp.hp, hunger: sp.hunger, saett: sp.saett, inv: sp.inv, wahl: sp.wahl, spawn: sp.spawn },
+      weltSpawn, aend, meta: [...welt.meta], oefen: [...OEFEN], truhen: [...TRUHEN], setzlinge: [...SETZLINGE]
+    };
+    localStorage.setItem(SPEICHER, JSON.stringify(daten));
+  } catch (e) { console.warn('Speichern fehlgeschlagen', e); }
+}
+function ladeDaten() { try { return JSON.parse(localStorage.getItem(SPEICHER) || 'null'); } catch (e) { return null; } }
+
+// =====================================================================
+//  Steuerung
+// =====================================================================
+let zustand = 'menue', debug = false, duckenTouch = false, sprintTouch = false;
+function sperren() { if (!istTouch && zustand === 'spiel' && !inventarOffen && !sp.tot) { const p = renderer.domElement.requestPointerLock && renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } }
+addEventListener('keydown', e => {
+  if (zustand !== 'spiel') return;
+  if (['Space', 'Tab', 'F3', 'ControlLeft'].includes(e.code)) e.preventDefault();
+  if (e.code === 'KeyE') { if (inventarOffen) inventarSchliessen(); else if (!sp.tot) inventarOeffnen('inventar'); return; }
+  if (e.code === 'Escape' && inventarOffen) { inventarSchliessen(); return; }
+  if (inventarOffen) return;
+  tasten[e.code] = true;
+  if (e.code.startsWith('Digit')) { const n = +e.code.slice(5); if (n >= 1 && n <= 9) waehle(n - 1); }
+  if (e.code === 'F3') { debug = !debug; $('f3').hidden = !debug; }
+  if (e.code === 'KeyQ') { const s = gehalten(); if (s) { const n = e.ctrlKey ? s.n : 1; const d = blick.clone(); gegenstandWerfen(s.id, n, sp.x, sp.y + 1.4, sp.z, s.dmg, d.x * 5, d.y * 5 + 2, d.z * 5); verbrauchen(sp.wahl, n); DROPS[DROPS.length - 1].alter = -1; } }
+  if (e.code === 'KeyW' && !e.repeat) { const t = performance.now(); if (t - (tasten.wZeit || 0) < 280) tasten.ControlLeft = true; tasten.wZeit = t; }
+});
+addEventListener('keyup', e => { tasten[e.code] = false; if (e.code === 'KeyW') tasten.ControlLeft = false; });
+addEventListener('blur', () => { for (const k in tasten) tasten[k] = false; abbauHalten = false; rechtsHalten = false; });
+renderer.domElement.addEventListener('mousedown', e => {
+  if (zustand !== 'spiel' || inventarOffen || sp.tot || istTouch) return;
+  if (!document.pointerLockElement) { sperren(); return; }
+  audioStart();
+  if (e.button === 0) { abbauHalten = true; angreifen(); }
+  if (e.button === 2) { rechtsHalten = true; benutzen(); rechtsT = .25; }
+});
+let rechtsT = 0;
+addEventListener('mouseup', e => { if (e.button === 0) abbauHalten = false; if (e.button === 2) rechtsHalten = false; });
+addEventListener('contextmenu', e => { if (zustand === 'spiel') e.preventDefault(); });
+addEventListener('mousemove', e => {
+  if (document.pointerLockElement !== renderer.domElement) return;
+  sp.yaw -= e.movementX * .0024; sp.pitch -= e.movementY * .0024;
+  sp.pitch = clamp(sp.pitch, -1.55, 1.55);
+});
+addEventListener('wheel', e => { if (zustand === 'spiel' && !inventarOffen) waehle(sp.wahl + (e.deltaY > 0 ? 1 : -1)); }, { passive: true });
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && zustand === 'spiel' && !inventarOffen && !sp.tot) pause();
+});
+// Touch
+function touchAufbauen() {
+  const joy = $('tJoy'), knopf = $('tKnopf');
+  let joyId = null, jx = 0, jy = 0;
+  joy.addEventListener('pointerdown', e => { joyId = e.pointerId; const r = joy.getBoundingClientRect(); jx = r.left + r.width / 2; jy = r.top + r.height / 2; joy.setPointerCapture(e.pointerId); bewegeJoy(e); });
+  const bewegeJoy = e => { if (e.pointerId !== joyId) return; let dx = (e.clientX - jx) / 50, dy = (e.clientY - jy) / 50; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } touchBew.x = dx; touchBew.y = -dy; knopf.style.transform = `translate(${dx * 38}px,${dy * 38}px)`; sprintTouch = -dy > .95; };
+  joy.addEventListener('pointermove', bewegeJoy);
+  const joyAus = () => { joyId = null; touchBew.x = touchBew.y = 0; knopf.style.transform = ''; sprintTouch = false; };
+  joy.addEventListener('pointerup', joyAus); joy.addEventListener('pointercancel', joyAus);
+  // Blick & Aktionen auf der Fläche
+  const fl = renderer.domElement; let lookId = null, lx = 0, ly = 0, startT = 0, bewegt = 0, haltT = null;
+  fl.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || zustand !== 'spiel' || inventarOffen || sp.tot || lookId !== null) return;
+    audioStart();
+    lookId = e.pointerId; lx = e.clientX; ly = e.clientY; startT = performance.now(); bewegt = 0;
+    haltT = setTimeout(() => { if (bewegt < 14) { abbauHalten = true; angreifen(); } }, 280);
+  });
+  fl.addEventListener('pointermove', e => {
+    if (e.pointerId !== lookId) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; bewegt += Math.abs(dx) + Math.abs(dy);
+    sp.yaw -= dx * .0055; sp.pitch = clamp(sp.pitch - dy * .0055, -1.55, 1.55);
+  });
+  const ende = e => {
+    if (e.pointerId !== lookId) return;
+    clearTimeout(haltT);
+    if (!abbauHalten && performance.now() - startT < 280 && bewegt < 14) { zielen(); if (ziel && ziel.mob) angreifen(); else { rechtsHalten = true; benutzen(); setTimeout(() => { if (!sp.essenT) rechtsHalten = false; }, 50); } }
+    abbauHalten = false; lookId = null;
+    if (sp.essenT > 0) { rechtsHalten = true; setTimeout(() => rechtsHalten = false, 1700); }
+  };
+  fl.addEventListener('pointerup', ende); fl.addEventListener('pointercancel', ende);
+  const knopfAn = (id, an, aus) => { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.classList.add('an'); an(); }); const a = () => { el.classList.remove('an'); aus && aus(); }; el.addEventListener('pointerup', a); el.addEventListener('pointercancel', a); el.addEventListener('pointerleave', a); };
+  knopfAn('tSpringen', () => sprungTouch = true, () => sprungTouch = false);
+  knopfAn('tDucken', () => { duckenTouch = !duckenTouch; $('tDucken').classList.toggle('fest', duckenTouch); });
+  knopfAn('tInv', () => inventarOeffnen('inventar'));
+  knopfAn('tPause', () => pause());
+  $('hotbar').addEventListener('pointerdown', e => { const d = e.target.closest('.slot'); if (d) waehle(+d.dataset.i); });
+}
+
+// =====================================================================
+//  Menüs & Start
+// =====================================================================
+function pause() {
+  if (zustand !== 'spiel') return;
+  zustand = 'pause'; speichern();
+  $('pSicht').value = sichtweite; $('pSichtWert').textContent = sichtweite;
+  $('pauseMenue').hidden = false; $('touch').hidden = true;
+}
+function weiter() { zustand = 'spiel'; $('pauseMenue').hidden = true; $('touch').hidden = !istTouch; sperren(); audioStart(); }
+function spawnFinden(w) {
+  for (let r = 0; r < 400; r += 8) for (let a = 0; a < 6.28; a += .5) {
+    const x = Math.floor(Math.cos(a) * r), z = Math.floor(Math.sin(a) * r), s = w.saeule(x, z);
+    if (s.h > MEER + 1 && s.biom !== 'schnee') return { x: x + .5, y: s.h + 1.05, z: z + .5 };
+  }
+  return { x: .5, y: 90, z: .5 };
+}
+function weltStarten(daten, seed) {
+  // alles zurücksetzen
+  if (welt) for (const c of welt.chunks.values()) meshEntfernen(c);
+  for (const w of WESEN) w.entfernen(); WESEN.length = 0;
+  for (const d of DROPS) { szene.remove(d.sprite); } DROPS.length = 0;
+  OEFEN.clear(); TRUHEN.clear(); SETZLINGE.clear();
+  welt = new Welt(daten ? daten.seed : seed);
+  if (daten) {
+    for (const k in daten.aend) { const a = daten.aend[k], m = new Map(); for (let i = 0; i < a.length; i += 2) m.set(a[i], a[i + 1]); welt.aend.set(k, m); }
+    for (const [k, v] of daten.meta || []) welt.meta.set(k, v);
+    for (const [k, v] of daten.oefen || []) OEFEN.set(k, v);
+    for (const [k, v] of daten.truhen || []) TRUHEN.set(k, v);
+    for (const [k, v] of daten.setzlinge || []) SETZLINGE.set(k, v);
+    zeit = daten.zeit; weltSpawn = daten.weltSpawn;
+    Object.assign(sp, daten.sp); sp.vx = sp.vy = sp.vz = 0; sp.tot = false; sp.luft = 10; sp.maxY = sp.y;
+    if (daten.sichtweite) sichtweite = daten.sichtweite;
+  } else {
+    weltSpawn = spawnFinden(welt);
+    Object.assign(sp, { x: weltSpawn.x, y: weltSpawn.y, z: weltSpawn.z, yaw: 0, pitch: 0, hp: 20, hunger: 20, saett: 5, inv: new Array(36).fill(null), wahl: 0, spawn: null, tot: false, maxY: weltSpawn.y, luft: 10 });
+    zeit = TAG * .27;
+  }
+  $('startMenue').hidden = true; $('laden').hidden = false;
+  const schritt = () => {
+    const fertig = chunkPflege(40);
+    const ges = Math.PI * (sichtweite + .5) ** 2; let n = 0; for (const c of welt.chunks.values()) if (c.mesh) n++;
+    $('ladeBalken').style.width = Math.min(100, n / ges * 100) + '%';
+    if (!fertig) { setTimeout(schritt, 0); return; }
+    // sicher auf den Boden stellen
+    while (kollidiert(sp.x, sp.y, sp.z, BREITE, HOEHE) && sp.y < CH) sp.y += 1;
+    sp.maxY = sp.y;
+    $('laden').hidden = true; $('hud').hidden = false; $('touch').hidden = !istTouch;
+    zustand = 'spiel'; hudCache = ''; hudWerte(); hudInv(); sperren(); audioStart();
+    if (!daten) meldung(istTouch ? 'Tipp: Halte auf einen Baum, um Holz abzubauen – dann • • • öffnen und Bretter craften!' : 'Tipp: Halte die linke Maustaste auf einem Baum – dann E drücken und Bretter craften!');
+  };
+  setTimeout(schritt, 30);
+}
+function menueAufbauen() {
+  const d = ladeDaten();
+  $('weiterKnopf').hidden = !d;
+  if (d) $('weiterInfo').textContent = 'Seed ' + d.seed;
+  $('seed').value = Math.floor(Math.random() * 1e6);
+  $('sicht').value = sichtweite; $('sichtWert').textContent = sichtweite;
+  $('sicht').oninput = () => { sichtweite = +$('sicht').value; $('sichtWert').textContent = sichtweite; };
+  $('weiterKnopf').onclick = () => { audioStart(); const d2 = ladeDaten(); if (d2) { d2.sichtweite = sichtweite; weltStarten(d2); } };
+  $('neuKnopf').onclick = () => {
+    if (ladeDaten() && !confirmNeu()) return;
+    audioStart(); const s = parseInt($('seed').value, 10) || Math.floor(Math.random() * 1e6); weltStarten(null, s);
+  };
+  $('tonKnopf').onclick = () => { tonAn = !tonAn; $('tonKnopf').textContent = 'TON: ' + (tonAn ? 'AN' : 'AUS'); if (master) master.gain.value = tonAn ? .5 : 0; };
+  $('pWeiter').onclick = weiter;
+  $('pSpeichern').onclick = () => { speichern(); zustand = 'menue'; $('pauseMenue').hidden = true; $('hud').hidden = true; menueAufbauen(); $('startMenue').hidden = false; };
+  $('pSicht').oninput = () => { sichtweite = +$('pSicht').value; $('pSichtWert').textContent = sichtweite; };
+  $('wiederKnopf').onclick = wiederbeleben;
+  if (istTouch) { $('steuerPC').hidden = true; $('steuerTouch').hidden = false; }
+}
+let neuBestaetigt = false;
+function confirmNeu() {
+  if (neuBestaetigt) return true;
+  neuBestaetigt = true; $('neuKnopf').textContent = 'WIRKLICH? ALTE WELT WIRD ÜBERSCHRIEBEN';
+  setTimeout(() => { neuBestaetigt = false; $('neuKnopf').textContent = 'NEUE WELT'; }, 3500);
+  return false;
+}
+
+// =====================================================================
+//  Hauptschleife
+// =====================================================================
+let letzte = performance.now(), akku = 0, fpsZ = 0, fpsT = 0, fps = 0, speicherT = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  const dtR = Math.min(.05, (t - letzte) / 1000); letzte = t;
+  fpsZ++; fpsT += dtR; if (fpsT > .5) { fps = Math.round(fpsZ / fpsT); fpsZ = 0; fpsT = 0; }
+  if (zustand === 'spiel' && welt) {
+    const dt = dtR * ZF;
+    akku += dt; let n = 0;
+    while (akku >= 1 / 60 && n < 10) {
+      if (!sp.tot && !inventarOffen) spielerPhysik(1 / 60); else if (!sp.tot) { sp.vx = sp.vz = 0; spielerPhysik(1 / 60); }
+      akku -= 1 / 60; n++;
+    }
+    if (n >= 10) akku = 0;
+    tageszeit(dt);
+    ueberleben(dt);
+    zielen();
+    abbauSchritt(dt);
+    if (rechtsHalten && !inventarOffen) { rechtsT -= dt; if (rechtsT <= 0 && !sp.essenT) { rechtsT = .22; benutzen(); } }
+    wesenSpawn(dt); wesenUpdate(dt); dropsUpdate(dt); oefenUpdate(dt); setzlingeUpdate(dt); partikelUpdate(dt);
+    if (inventarOffen && uiArt === 'ofen') { ofenAnzeige(); if (Math.random() < .1) uiZeichnen(); }
+    chunkPflege(5);
+    hudWerte();
+    speicherT += dtR; if (speicherT > 20) { speicherT = 0; speichern(); }
+    if (debug) {
+      const c = welt.chunk(Math.floor(sp.x) >> 4, Math.floor(sp.z) >> 4);
+      $('f3').textContent = `BLOCKHEIM  ${fps} FPS\nXYZ: ${sp.x.toFixed(2)} / ${sp.y.toFixed(2)} / ${sp.z.toFixed(2)}\nChunk: ${Math.floor(sp.x) >> 4}, ${Math.floor(sp.z) >> 4}  geladen: ${welt.chunks.size}\nBiom: ${welt.saeule(Math.floor(sp.x), Math.floor(sp.z)).biom}\nLicht: Himmel ${welt.licht(Math.floor(sp.x), Math.floor(sp.y + 1), Math.floor(sp.z), 's')} Block ${welt.licht(Math.floor(sp.x), Math.floor(sp.y + 1), Math.floor(sp.z), 'l')}\nZeit: ${Math.floor((zeit % TAG) / TAG * 24)}:00  Tag ${Math.floor(zeit / TAG) + 1}\nWesen: ${WESEN.length}  Gegenstände: ${DROPS.length}\nZiel: ${ziel && !ziel.mob ? BLOCK[ziel.id].name + ' @ ' + ziel.x + ',' + ziel.y + ',' + ziel.z : ziel && ziel.mob ? ziel.mob.typ.name : '–'}`;
+    }
+  }
+  if (welt) {
+    // Kamera
+    const eye = sp.y + (sp.ducken ? 1.32 : 1.62);
+    const wack = sp.amBoden ? Math.sin(sp.wackel) * .045 : 0;
+    kamera.position.set(sp.x, eye + Math.abs(wack) * .8, sp.z);
+    kamera.rotation.set(sp.pitch, sp.yaw, sp.schutzT > .2 ? .05 : 0);
+    const zfov = sp.sprint ? 82 : 72; kamera.fov += (zfov - kamera.fov) * Math.min(1, dtR * 8); kamera.updateProjectionMatrix();
+    schwung = Math.max(0, schwung - dtR * 4);
+    handGr.position.set(.52 + wack * .5, -.48 - Math.abs(wack) * .5 - schwung * .1, -.85 + schwung * .12);
+    handGr.rotation.set(-schwung * .9, 0, 0);
+    const lf = lichtFaktor(sp.x, eye, sp.z); handArm.material.color.setRGB(.85 * lf, .63 * lf, .48 * lf); handItem.material.color.setScalar(lf);
+    $('wasserBild').style.opacity = sp.kopfWasser ? 1 : 0;
+    handGr.visible = zustand === 'spiel' || zustand === 'pause';
+    if (zustand !== 'spiel') { tageszeit(0); }
+  }
+  renderer.render(szene, kamera);
+}
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); kamera.aspect = innerWidth / innerHeight; kamera.updateProjectionMatrix(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && zustand === 'spiel') { speichern(); pause(); } });
+addEventListener('pagehide', speichern);
+
+invAufbauen(); menueAufbauen(); if (istTouch) { touchAufbauen(); document.body.classList.add('touch'); }
+// Hintergrund im Menü: kleine Welt zeigen
+(function menueWelt() {
+  welt = new Welt(7);
+  const s = spawnFinden(welt); Object.assign(sp, { x: s.x, y: s.y + 6, z: s.z, yaw: .8, pitch: -.25 });
+  sichtweite = Math.min(sichtweite, 4);
+  const lauf = () => { if (zustand !== 'menue') return; chunkPflege(12); sp.yaw += .0015; setTimeout(lauf, 30); };
+  lauf();
+  sichtweite = istTouch ? 4 : 5;
+})();
+$('laden').hidden = true; $('startMenue').hidden = false;
+requestAnimationFrame(frame);
+window.__bh = { get meshZaehler() { return meshZaehler; }, SETZLINGE, set abbauHalten(v) { abbauHalten = v; }, set rechtsHalten(v) { rechtsHalten = v; }, OEFEN, TRUHEN, waehle, get inventarOffen() { return inventarOffen; }, sp, get welt() { return welt; }, WESEN, DROPS, hinzufuegen, inventarOeffnen, inventarSchliessen, slotKlick, benutzen, blockAbbauen, tasten, get zustand() { return zustand; }, set zeitSetzen(v) { zeit = v; }, zielen, get ziel() { return ziel; }, Wesen };
+
+})();
+</script>
+</body>
+</html>
+
